@@ -9,6 +9,9 @@ import { AdminHeader } from "@/components/admin/AdminHeader";
 import { AdminOverviewTab } from "@/components/admin/AdminOverviewTab";
 import { AdminRegistrationsTab } from "@/components/admin/AdminRegistrationsTab";
 import { AdminPassesTab } from "@/components/admin/AdminPassesTab";
+import { AdminExportTab } from "@/components/admin/AdminExportTab";
+import { AdminPricingTab } from "@/components/admin/AdminPricingTab";
+import { AdminUpdatesTab } from "@/components/admin/AdminUpdatesTab";
 import type {
   AdminOverviewStats,
   AdminRegistration,
@@ -30,6 +33,9 @@ import {
   XCircle,
   Loader2,
   LogOut,
+  Download,
+  Tag,
+  Megaphone,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -217,8 +223,9 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               {isLoadingParticipant ? (
-                <div className="flex items-center justify-center py-8">
+                <div className="flex flex-col items-center justify-center py-8 gap-2">
                   <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                  <p className="text-xs text-muted-foreground">Loading...</p>
                 </div>
               ) : participantRegistrations.length === 0 ? (
                 <div className="text-center py-8">
@@ -275,7 +282,7 @@ export default function Dashboard() {
 
   // Admin & Organizer Portal View
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-[#0c0919] text-white flex flex-col selection:bg-euphoria-purple/30 selection:text-white">
       {/* Admin Header */}
       <AdminHeader onRefresh={handleRefresh} isRefreshing={isRefreshing} />
 
@@ -283,8 +290,8 @@ export default function Dashboard() {
       <main className="flex-1 px-4 sm:px-6 py-6 max-w-7xl mx-auto w-full">
         {isLoadingPortal ? (
           <div className="py-32 flex flex-col items-center justify-center gap-3">
-            <Loader2 className="size-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Loading Admin Portal...</p>
+            <Loader2 className="size-8 animate-spin text-euphoria-purple" />
+            <p className="text-sm text-white/60">Loading...</p>
           </div>
         ) : (
           <Tabs
@@ -298,37 +305,82 @@ export default function Dashboard() {
             className="space-y-6"
           >
             {/* Tabs List — Strictly Role-Aware: Passes hidden for Organizers */}
-            <div className="flex items-center justify-between border-b border-border/60 pb-3">
-              <TabsList className="bg-muted/60 p-1 h-auto flex-wrap">
-                <TabsTrigger value="overview" className="gap-2 text-xs py-1.5 px-3">
+            <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
+              <TabsList className="bg-[#140f26] border border-white/[0.08] p-1 rounded-xl h-auto flex-wrap gap-1">
+                <TabsTrigger
+                  value="overview"
+                  className="gap-2 text-xs py-1.5 px-3 rounded-lg text-white/70 hover:text-white data-[state=active]:bg-white/[0.1] data-[state=active]:text-white data-[state=active]:shadow-xs transition-colors"
+                >
                   <LayoutDashboard className="size-3.5" />
                   Overview
                 </TabsTrigger>
 
-                <TabsTrigger value="registrations" className="gap-2 text-xs py-1.5 px-3">
+                <TabsTrigger
+                  value="registrations"
+                  className="gap-2 text-xs py-1.5 px-3 rounded-lg text-white/70 hover:text-white data-[state=active]:bg-white/[0.1] data-[state=active]:text-white data-[state=active]:shadow-xs transition-colors"
+                >
                   <Users className="size-3.5" />
                   Event Registrations
                   {stats && (
-                    <span className="ml-1 text-[10px] bg-background/80 px-1.5 py-0.2 rounded-full border">
+                    <span className="ml-1 text-[10px] font-semibold bg-white/[0.08] text-white/90 px-1.5 py-0.5 rounded-full border border-white/[0.1]">
                       {stats.totalRegistrations}
                     </span>
                   )}
                 </TabsTrigger>
 
-                {/* Festival Passes: STRICTLY ADMIN ONLY */}
+                {/* Pass Orders: STRICTLY ADMIN ONLY */}
                 {isAdmin && (
-                  <TabsTrigger value="passes" className="gap-2 text-xs py-1.5 px-3">
+                  <TabsTrigger
+                    value="passes"
+                    className="gap-2 text-xs py-1.5 px-3 rounded-lg text-white/70 hover:text-white data-[state=active]:bg-white/[0.1] data-[state=active]:text-white data-[state=active]:shadow-xs transition-colors"
+                  >
                     <Ticket className="size-3.5" />
-                    Festival Passes
+                    Pass Orders
                     {stats && (
-                      <span className="ml-1 text-[10px] bg-background/80 px-1.5 py-0.2 rounded-full border">
+                      <span className="ml-1 text-[10px] font-semibold bg-white/[0.08] text-white/90 px-1.5 py-0.5 rounded-full border border-white/[0.1]">
                         {stats.totalPassPurchases}
                       </span>
                     )}
                   </TabsTrigger>
                 )}
 
-                <TabsTrigger value="profile" className="gap-2 text-xs py-1.5 px-3">
+                {/* Dynamic Pricing: STRICTLY ADMIN ONLY */}
+                {isAdmin && (
+                  <TabsTrigger
+                    value="pricing"
+                    className="gap-2 text-xs py-1.5 px-3 rounded-lg text-white/70 hover:text-white data-[state=active]:bg-white/[0.1] data-[state=active]:text-white data-[state=active]:shadow-xs transition-colors"
+                  >
+                    <Tag className="size-3.5" />
+                    Pricing Management
+                  </TabsTrigger>
+                )}
+
+                {/* Export Center: STRICTLY ADMIN ONLY */}
+                {isAdmin && (
+                  <TabsTrigger
+                    value="exports"
+                    className="gap-2 text-xs py-1.5 px-3 rounded-lg text-white/70 hover:text-white data-[state=active]:bg-white/[0.1] data-[state=active]:text-white data-[state=active]:shadow-xs transition-colors"
+                  >
+                    <Download className="size-3.5" />
+                    Export Center
+                  </TabsTrigger>
+                )}
+
+                {/* Dynamic Updates: STRICTLY ADMIN ONLY */}
+                {isAdmin && (
+                  <TabsTrigger
+                    value="updates"
+                    className="gap-2 text-xs py-1.5 px-3 rounded-lg text-white/70 hover:text-white data-[state=active]:bg-white/[0.1] data-[state=active]:text-white data-[state=active]:shadow-xs transition-colors"
+                  >
+                    <Megaphone className="size-3.5" />
+                    Updates & Announcements
+                  </TabsTrigger>
+                )}
+
+                <TabsTrigger
+                  value="profile"
+                  className="gap-2 text-xs py-1.5 px-3 rounded-lg text-white/70 hover:text-white data-[state=active]:bg-white/[0.1] data-[state=active]:text-white data-[state=active]:shadow-xs transition-colors"
+                >
                   <User className="size-3.5" />
                   Admin Profile
                 </TabsTrigger>
@@ -352,18 +404,20 @@ export default function Dashboard() {
                 isAdmin={isAdmin}
                 categories={categories}
                 events={events}
+                overviewStats={stats}
                 selectedRegForDetail={selectedRegForDetail}
                 onClearSelectedReg={() => setSelectedRegForDetail(null)}
                 onDataChanged={fetchAdminData}
               />
             </TabsContent>
 
-            {/* Tab 3: Festival Passes (STRICTLY ADMIN ONLY) */}
+            {/* Tab 3: Pass Orders (STRICTLY ADMIN ONLY) */}
             {isAdmin && (
               <TabsContent value="passes" className="mt-0 focus-visible:outline-none">
                 <AdminPassesTab
                   isAdmin={isAdmin}
                   passes={passes}
+                  overviewStats={stats}
                   selectedPassForDetail={selectedPassForDetail}
                   onClearSelectedPass={() => setSelectedPassForDetail(null)}
                   onDataChanged={fetchAdminData}
@@ -371,31 +425,72 @@ export default function Dashboard() {
               </TabsContent>
             )}
 
-            {/* Tab 4: Admin Profile */}
+            {/* Tab: Dynamic Pricing (STRICTLY ADMIN ONLY) */}
+            {isAdmin && (
+              <TabsContent value="pricing" className="mt-0 focus-visible:outline-none">
+                <AdminPricingTab
+                  isAdmin={isAdmin}
+                  events={events}
+                  passes={passes}
+                  categories={categories}
+                  onEventPriceUpdated={(updatedEvent) => {
+                    setEvents((prev) =>
+                      prev.map((e) =>
+                        e.id === updatedEvent.id ? { ...e, fee: updatedEvent.fee } : e
+                      )
+                    );
+                  }}
+                  onPassPriceUpdated={(updatedPass) => {
+                    setPasses((prev) =>
+                      prev.map((p) =>
+                        p.id === updatedPass.id ? { ...p, price: updatedPass.price } : p
+                      )
+                    );
+                  }}
+                  onRefresh={handleRefresh}
+                />
+              </TabsContent>
+            )}
+
+            {/* Tab 4: Export Center (STRICTLY ADMIN ONLY) */}
+            {isAdmin && (
+              <TabsContent value="exports" className="mt-0 focus-visible:outline-none">
+                <AdminExportTab stats={stats} />
+              </TabsContent>
+            )}
+
+            {/* Tab: Dynamic Updates (STRICTLY ADMIN ONLY) */}
+            {isAdmin && (
+              <TabsContent value="updates" className="mt-0 focus-visible:outline-none">
+                <AdminUpdatesTab isAdmin={isAdmin} />
+              </TabsContent>
+            )}
+
+            {/* Tab 5: Admin Profile */}
             <TabsContent value="profile" className="mt-0 focus-visible:outline-none">
               <div className="max-w-2xl space-y-6">
-                <Card className="border-border/60 shadow-sm">
+                <Card className="border border-white/[0.1] bg-[#16112c] rounded-2xl shadow-lg shadow-black/25">
                   <CardHeader>
-                    <CardTitle className="text-base font-semibold">Account Information</CardTitle>
+                    <CardTitle className="text-base font-bold text-white">Account Information</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4 text-sm">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <span className="text-xs text-muted-foreground block">Name</span>
-                        <span className="font-medium text-foreground">{user?.name}</span>
+                        <span className="text-xs font-semibold uppercase tracking-wider text-white/50 block">Name</span>
+                        <span className="font-medium text-white">{user?.name}</span>
                       </div>
                       <div>
-                        <span className="text-xs text-muted-foreground block">Email</span>
-                        <span className="font-medium text-foreground">{user?.email}</span>
+                        <span className="text-xs font-semibold uppercase tracking-wider text-white/50 block">Email</span>
+                        <span className="font-medium text-white">{user?.email}</span>
                       </div>
                       <div>
-                        <span className="text-xs text-muted-foreground block">Role</span>
-                        <span className="font-medium text-primary">{user?.role}</span>
+                        <span className="text-xs font-semibold uppercase tracking-wider text-white/50 block">Role</span>
+                        <span className="font-semibold text-xs px-2.5 py-0.5 rounded-full bg-euphoria-purple/20 text-euphoria-aqua border border-euphoria-purple/35 inline-block mt-0.5">{user?.role}</span>
                       </div>
                       {user?.phone && (
                         <div>
-                          <span className="text-xs text-muted-foreground block">Phone</span>
-                          <span className="text-foreground">{user.phone}</span>
+                          <span className="text-xs font-semibold uppercase tracking-wider text-white/50 block">Phone</span>
+                          <span className="font-medium text-white">{user.phone}</span>
                         </div>
                       )}
                     </div>

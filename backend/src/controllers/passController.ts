@@ -74,3 +74,43 @@ export const purchasePassHandler = async (
     next(error);
   }
 };
+
+/**
+ * Controller validating a Festival Pass coupon for Standup Comedy
+ * POST /api/passes/validate-coupon
+ */
+export const validatePassCouponHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const rawPassId = req.body.passId || req.body.couponCode || req.body.code || "";
+    const eventId = req.body.eventId || undefined;
+
+    const result = await PassService.validatePassCoupon(rawPassId, eventId);
+
+    if (!result.valid) {
+      res.status(200).json({
+        status: "fail",
+        valid: false,
+        message: result.message || "Invalid or inactive Festival Pass.",
+        data: {
+          valid: false,
+          message: result.message || "Invalid or inactive Festival Pass.",
+        },
+      });
+      return;
+    }
+
+    res.status(200).json({
+      status: "success",
+      valid: true,
+      message: "Festival Pass verified",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

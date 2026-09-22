@@ -21,6 +21,7 @@ import { Navbar } from "@/components/euphoria/Navbar";
 import { Footer } from "@/components/euphoria/Footer";
 import { SmoothCursor } from "@/components/magicui/smooth-cursor";
 import { apiPost, apiGet } from "@/lib/api";
+import { EuphoriaOtpInput } from "@/components/euphoria/EuphoriaOtpInput";
 
 interface GuestRegistration {
   id: string;
@@ -80,6 +81,13 @@ interface GuestPassPurchase {
     transactionId?: string | null;
     paidAt?: string | null;
   } | null;
+  holders?: {
+    id: string;
+    holderIndex: number;
+    fullName: string;
+    email: string;
+    phone: string;
+  }[];
 }
 
 export default function MyRegistrations() {
@@ -268,17 +276,17 @@ export default function MyRegistrations() {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full py-3 rounded-xl font-semibold text-xs tracking-[0.15em] uppercase bg-gradient-to-r from-euphoria-aqua to-euphoria-teal text-white hover:opacity-95 transition-all shadow-lg shadow-euphoria-aqua/10 flex items-center justify-center gap-2 disabled:opacity-40"
+                    className="w-full py-3 rounded-xl font-bold text-xs tracking-[0.15em] uppercase bg-gradient-to-r from-euphoria-aqua via-cyan-300 to-euphoria-aqua text-neutral-950 hover:brightness-105 active:scale-[0.98] transition-all shadow-lg shadow-euphoria-aqua/20 flex items-center justify-center gap-2 disabled:bg-white/[0.08] disabled:text-white/40 disabled:border disabled:border-white/[0.08] disabled:shadow-none disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-euphoria-aqua focus-visible:outline-none"
                   >
                     {isLoading ? (
                       <>
-                        <Loader2 className="size-4 animate-spin" />
-                        Sending Code...
+                        <Loader2 className="size-4 animate-spin text-neutral-950" />
+                        Processing...
                       </>
                     ) : (
                       <>
                         Send Verification Code
-                        <ArrowRight className="size-4" />
+                        <ArrowRight className="size-4 text-neutral-950" />
                       </>
                     )}
                   </button>
@@ -331,35 +339,33 @@ export default function MyRegistrations() {
 
                 <form onSubmit={handleVerifyOtp} className="space-y-4">
                   <div>
-                    <label className="text-[10px] font-semibold tracking-[0.2em] uppercase text-white/45 block mb-2 text-center">
+                    <label className="text-[10px] font-semibold tracking-[0.2em] uppercase text-white/45 block mb-3 text-center">
                       Enter 6-Digit Code
                     </label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={6}
+                    <EuphoriaOtpInput
                       value={otp}
-                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                      placeholder="······"
-                      className="w-full text-center text-2xl font-mono tracking-[0.35em] py-3 px-4 bg-white/[0.04] border border-white/[0.1] rounded-xl text-white focus:outline-none focus:border-euphoria-aqua/50 focus:ring-1 focus:ring-euphoria-aqua/30 transition-all"
+                      onChange={setOtp}
                       autoFocus
+                      disabled={isLoading}
+                      hasError={Boolean(error)}
+                      accentColor="aqua"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={isLoading || otp.trim().length !== 6}
-                    className="w-full py-3 rounded-xl font-semibold text-xs tracking-[0.15em] uppercase bg-gradient-to-r from-euphoria-aqua to-euphoria-teal text-white hover:opacity-95 transition-all shadow-lg shadow-euphoria-aqua/10 flex items-center justify-center gap-2 disabled:opacity-40"
+                    className="w-full py-3 rounded-xl font-bold text-xs tracking-[0.15em] uppercase bg-gradient-to-r from-euphoria-aqua via-cyan-300 to-euphoria-aqua text-neutral-950 hover:brightness-105 active:scale-[0.98] transition-all shadow-lg shadow-euphoria-aqua/20 flex items-center justify-center gap-2 disabled:bg-white/[0.08] disabled:text-white/40 disabled:border disabled:border-white/[0.08] disabled:shadow-none disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-euphoria-aqua focus-visible:outline-none"
                   >
                     {isLoading ? (
                       <>
-                        <Loader2 className="size-4 animate-spin" />
-                        Verifying...
+                        <Loader2 className="size-4 animate-spin text-neutral-950" />
+                        Processing...
                       </>
                     ) : (
                       <>
                         Access My Tickets
-                        <ArrowRight className="size-4" />
+                        <ArrowRight className="size-4 text-neutral-950" />
                       </>
                     )}
                   </button>
@@ -593,7 +599,7 @@ export default function MyRegistrations() {
                       </p>
                       <a
                         href="/#passes"
-                        className="inline-flex items-center gap-1.5 text-xs text-euphoria-gold font-semibold hover:underline pt-2"
+                        className="inline-flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 font-semibold hover:underline pt-2 transition-colors"
                       >
                         View Available Passes <ArrowRight className="size-3.5" />
                       </a>
@@ -651,6 +657,61 @@ export default function MyRegistrations() {
                             <span className="text-white/80">{purchase.fullName}</span>
                           </div>
                         </div>
+
+                        {/* Pass Holders Info if bulk purchase */}
+                        {((purchase.holders && purchase.holders.length > 0) || purchase.quantity > 1) && (
+                          <div className="p-3.5 rounded-xl bg-euphoria-gold/[0.04] border border-euphoria-gold/15 text-xs space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-white/90 flex items-center gap-1.5">
+                                <Users className="size-3.5 text-euphoria-gold" /> Pass Holders ({purchase.quantity})
+                              </span>
+                              <span className="text-[10px] text-white/40">
+                                Primary: {purchase.fullName}
+                              </span>
+                            </div>
+                            <div className="pt-1.5 border-t border-white/[0.06] space-y-1.5 text-[11px]">
+                              {(purchase.holders && purchase.holders.length > 0
+                                ? purchase.holders.some((h) => h.holderIndex === 1)
+                                  ? purchase.holders
+                                  : [
+                                      {
+                                        id: "primary",
+                                        holderIndex: 1,
+                                        fullName: purchase.fullName,
+                                        phone: purchase.phone,
+                                      },
+                                      ...purchase.holders,
+                                    ]
+                                : [
+                                    {
+                                      id: "primary",
+                                      holderIndex: 1,
+                                      fullName: purchase.fullName,
+                                      phone: purchase.phone,
+                                    },
+                                  ]
+                              ).map((h, i) => {
+                                const isPrimary = h.holderIndex === 1 || i === 0;
+                                return (
+                                  <div
+                                    key={h.id || i}
+                                    className="flex items-center justify-between text-white/75 bg-white/[0.02] px-2.5 py-1 rounded"
+                                  >
+                                    <span>
+                                      {h.holderIndex || i + 1}. {h.fullName}{" "}
+                                      {isPrimary && (
+                                        <span className="text-[9px] text-euphoria-gold uppercase font-bold ml-1">
+                                          (Primary)
+                                        </span>
+                                      )}
+                                    </span>
+                                    <span className="text-white/40 font-mono text-[10px]">{h.phone}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))
                   )}

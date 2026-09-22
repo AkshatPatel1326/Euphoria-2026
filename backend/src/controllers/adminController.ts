@@ -309,3 +309,88 @@ export const deletePassPurchaseHandler = async (
     next(error);
   }
 };
+
+/**
+ * Controller updating event price / fee (Admin ONLY)
+ * PATCH /api/admin/events/:id/price
+ */
+export const updateEventPriceHandler = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      throw new HttpError("Authentication required.", 401);
+    }
+
+    const id = req.params.id as string;
+    const { fee } = req.body;
+
+    if (fee === undefined || fee === null) {
+      throw new HttpError("Field 'fee' is required.", 400);
+    }
+
+    const parsedFee = typeof fee === "string" ? parseFloat(fee) : fee;
+
+    const updatedEvent = await AdminService.updateEventPrice(
+      id,
+      parsedFee,
+      req.user
+    );
+
+    res.status(200).json({
+      status: "success",
+      message: `Event price updated to ₹${updatedEvent.fee}.`,
+      data: { event: updatedEvent },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Controller updating festival pass price (Admin ONLY)
+ * PATCH /api/admin/passes/:id/price
+ */
+export const updatePassPriceHandler = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      throw new HttpError("Authentication required.", 401);
+    }
+
+    const id = req.params.id as string;
+    const { price } = req.body;
+
+    let parsedPrice: number | null;
+    if (price === null || price === "null" || price === "") {
+      parsedPrice = null;
+    } else if (typeof price === "string") {
+      parsedPrice = parseFloat(price);
+    } else {
+      parsedPrice = price;
+    }
+
+    const updatedPass = await AdminService.updatePassPrice(
+      id,
+      parsedPrice,
+      req.user
+    );
+
+    res.status(200).json({
+      status: "success",
+      message:
+        updatedPass.price !== null
+          ? `Festival pass price updated to ₹${updatedPass.price}.`
+          : "Festival pass price cleared (Price to be announced).",
+      data: { pass: updatedPass },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

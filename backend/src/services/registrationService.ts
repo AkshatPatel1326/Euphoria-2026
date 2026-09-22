@@ -10,11 +10,17 @@ import {
 } from "../../generated/prisma/client";
 import { HttpError } from "../lib/errors";
 import { VerificationService } from "./verificationService";
+import { emailService } from "./emailService";
 import type {
   CreateRegistrationInput,
   RegistrationDetail,
   JwtUserPayload,
 } from "../types";
+import {
+  isValidSageInstitute,
+  isValidSageYear,
+  YEAR_TO_SEMESTER_MAP,
+} from "../lib/academic";
 
 /**
  * Helper to normalize participant category strings from frontend or enum values
@@ -26,10 +32,26 @@ export function normalizeParticipantCategory(
     throw new HttpError("Participant category is required", 400);
   }
 
-  const normalized = cat.toString().trim().toUpperCase().replace(/-/g, "_");
-  if (normalized === "SAGE") return ParticipantCategory.SAGE;
-  if (normalized === "OTHER_COLLEGE") return ParticipantCategory.OTHER_COLLEGE;
-  if (normalized === "GENERAL") return ParticipantCategory.GENERAL;
+  const raw = cat.toString().trim();
+  const normalized = raw.toUpperCase().replace(/[-\s/]+/g, "_");
+  if (
+    normalized === "SAGE" ||
+    normalized === "SAGE_STUDENT" ||
+    normalized === "SAGE_UNIVERSITY_STUDENT"
+  ) {
+    return ParticipantCategory.SAGE;
+  }
+  if (
+    normalized === "OTHER_COLLEGE" ||
+    normalized === "OTHER_COLLEGE_STUDENT" ||
+    normalized === "OTHER_COLLEGE_SCHOOL_STUDENT" ||
+    normalized === "OTHER_COLLEGE_SCHOOL"
+  ) {
+    return ParticipantCategory.OTHER_COLLEGE;
+  }
+  if (normalized === "GENERAL" || normalized === "GENERAL_PARTICIPANT") {
+    return ParticipantCategory.GENERAL;
+  }
 
   throw new HttpError(
     `Invalid participant category '${cat}'. Allowed: SAGE, OTHER_COLLEGE, GENERAL`,
@@ -123,12 +145,14 @@ export class RegistrationService {
       );
     }
 
-    const scholarNumber = input.scholarNumber?.trim() || null;
-    const enrollmentNumber = input.enrollmentNumber?.trim() || null;
-    const collegeName = input.collegeName?.trim() || null;
-    const course = input.course?.trim() || null;
-    const year = input.year?.trim() || null;
-    const city = input.city?.trim() || null;
+    let scholarNumber = input.scholarNumber?.trim() || null;
+    let enrollmentNumber = input.enrollmentNumber?.trim() || null;
+    let collegeName = input.collegeName?.trim() || null;
+    let course = input.course?.trim() || null;
+    let year = input.year?.trim() || null;
+    let city = input.city?.trim() || null;
+    let institute = input.institute?.trim() || null;
+    let semester: string | null = null;
 
     // Execute atomic registration within Prisma transaction with row-level lock
     return await prisma.$transaction(async (tx) => {
@@ -226,64 +250,115 @@ export class RegistrationService {
         }
       }
 
-      // 7. Handle Group vs Individual validation and Team creation
+      // 7. Validate Participant Category and category-specific requirements
+      if (participantCategory === ParticipantCategory.SAGE) {
+        if (!scholarNumber) {
+          throw new HttpError("Scholar number is required for SAGE University students", 400);
+        }
+        if (!enrollmentNumber) {
+          throw new HttpError("Enrollment number is required for SAGE University students", 400);
+        }
+        if (!institute) {
+          throw new HttpError("Please select your institute", 400);
+        }
+        if (!isValidSageInstitute(institute)) {
+          throw new HttpError("Invalid institute selected", 400);
+        }
+        if (!year) {
+          throw new HttpError("Please select your year", 400);
+        }
+        if (!isValidSageYear(year)) {
+          throw new HttpError("Invalid academic year selected", 400);
+        }
+
+        // Strictly derive semester from valid year
+        semester = YEAR_TO_SEMESTER_MAP[year];
+
+        // If client provided a semester, verify it matches
+        if (input.semester && input.semester.trim() !== semester) {
+          throw new HttpError(`Semester mismatch: ${year} must correspond to ${semester}`, 400);
+        }
+
+        // SAGE students do not have an external college name
+        collegeName = null;
+      } else if (participantCategory === ParticipantCategory.OTHER_COLLEGE) {
+        if (!collegeName) {
+          throw new HttpError("College/School name is required for Other College/School students", 400);
+        }
+
+        // Other College/School students: SAGE-specific fields must not be stored
+        scholarNumber = null;
+        enrollmentNumber = null;
+        institute = null;
+        semester = null;
+      } else if (participantCategory === ParticipantCategory.GENERAL) {
+        // General category: student-only fields must not be stored
+        scholarNumber = null;
+        enrollmentNumber = null;
+        collegeName = null;
+        institute = null;
+        course = null;
+        year = null;
+        semester = null;
+      }
+
+      // 8. Handle Group vs Individual validation and Team creation
       let teamId: string | null = null;
 
-      if (eventLock.registrationType === RegistrationType.GROUP) {
+      const isTeam =
+        eventLock.registrationType === RegistrationType.GROUP ||
+        eventLock.maxTeamSize > 1;
+
+      if (isTeam) {
         const teamName = input.teamName?.trim();
         if (!teamName) {
           throw new HttpError(
-            "Team name is required for group event registrations",
+            "Team name is required for team/group event registrations",
             400
           );
         }
 
         const membersInput = input.teamMembers || [];
-        // Total team size = 1 (Team Leader / Current User) + additional members
-        const totalTeamSize = 1 + membersInput.length;
 
-        if (totalTeamSize < eventLock.minTeamSize) {
-          throw new HttpError(
-            `Group registration requires at least ${eventLock.minTeamSize} team members (including team leader)`,
-            400
-          );
-        }
-
-        if (totalTeamSize > eventLock.maxTeamSize) {
-          throw new HttpError(
-            `Group registration allows at most ${eventLock.maxTeamSize} team members (including team leader)`,
-            400
-          );
-        }
-
-        // Validate each member has valid name, email, phone and doesn't match leader
-        for (let i = 0; i < membersInput.length; i++) {
-          const m = membersInput[i];
-          if (!m.fullName || !m.fullName.trim()) {
-            throw new HttpError(`Team member #${i + 1} name is required`, 400);
-          }
-          if (!m.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m.email.trim())) {
+        // Backward-compatible: If optional team members are provided, ensure total count does not exceed maxTeamSize
+        if (membersInput.length > 0) {
+          const totalTeamSize = 1 + membersInput.length;
+          if (totalTeamSize > eventLock.maxTeamSize) {
             throw new HttpError(
-              `Team member #${i + 1} has an invalid email address`,
+              `Group registration allows at most ${eventLock.maxTeamSize} team members (including team leader)`,
               400
             );
           }
-          const mEmail = m.email.trim().toLowerCase();
-          if (mEmail === email) {
-            throw new HttpError(
-              `Team member #${i + 1} (${m.fullName}) has the same email as the team leader`,
-              400
-            );
-          }
-          if (!m.phone || m.phone.replace(/\D/g, "").length < 10) {
-            throw new HttpError(
-              `Team member #${i + 1} requires a valid 10-digit phone number`,
-              400
-            );
+
+          // Validate each provided member has valid name, email, phone and doesn't match leader
+          for (let i = 0; i < membersInput.length; i++) {
+            const m = membersInput[i];
+            if (!m.fullName || !m.fullName.trim()) {
+              throw new HttpError(`Team member #${i + 1} name is required`, 400);
+            }
+            if (!m.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m.email.trim())) {
+              throw new HttpError(
+                `Team member #${i + 1} has an invalid email address`,
+                400
+              );
+            }
+            const mEmail = m.email.trim().toLowerCase();
+            if (mEmail === email) {
+              throw new HttpError(
+                `Team member #${i + 1} (${m.fullName}) has the same email as the team leader`,
+                400
+              );
+            }
+            if (!m.phone || m.phone.replace(/\D/g, "").length < 10) {
+              throw new HttpError(
+                `Team member #${i + 1} requires a valid 10-digit phone number`,
+                400
+              );
+            }
           }
         }
 
-        // Create Team and associated TeamMembers
+        // Create Team and associated TeamMembers (if optional members provided)
         const team = await tx.team.create({
           data: {
             name: teamName,
@@ -292,29 +367,113 @@ export class RegistrationService {
             leaderName: fullName,
             leaderEmail: email,
             leaderPhone: phone,
-            members: {
-              create: membersInput.map((m) => ({
-                fullName: m.fullName.trim(),
-                email: m.email.trim().toLowerCase(),
-                phone: m.phone.trim(),
-                scholarNumber: m.scholarNumber?.trim() || null,
-                collegeName: m.collegeName?.trim() || null,
-              })),
-            },
+            ...(membersInput.length > 0
+              ? {
+                  members: {
+                    create: membersInput.map((m) => ({
+                      fullName: m.fullName.trim(),
+                      email: m.email.trim().toLowerCase(),
+                      phone: m.phone.trim(),
+                      scholarNumber: m.scholarNumber?.trim() || null,
+                      collegeName: m.collegeName?.trim() || null,
+                    })),
+                  },
+                }
+              : {}),
           },
         });
 
         teamId = team.id;
       }
 
-      // 8. Generate unique registration number
-      const registrationNumber = generateRegistrationNumber();
-      const isFreeEvent = eventLock.fee <= 0;
+      // 8. Handle Standup Comedy Festival Pass coupon validation & pricing
+      const isStandupComedy =
+        eventLock.id === "cultural-12" ||
+        eventLock.name.toLowerCase().includes("standup comedy") ||
+        eventLock.name.toLowerCase().includes("pankaj");
+
+      let appliedPassNumber: string | null = null;
+      let passDiscountAmount = 0;
+      let finalPayableFee = eventLock.fee; // Default: ₹199 for Standup, or normal fee for other events
+
+      if (input.festivalPassId && input.festivalPassId.trim()) {
+        const enteredPassId = input.festivalPassId.trim().toUpperCase();
+
+        if (!isStandupComedy) {
+          throw new HttpError("Festival Pass coupon discount is only applicable for Standup Comedy.", 400);
+        }
+
+        // Row-level lock the PassPurchase row using SELECT ... FOR UPDATE to serialize concurrent requests
+        const lockedPasses = await tx.$queryRaw<
+          Array<{
+            id: string;
+            passNumber: string;
+            status: string;
+            standupDiscountUsed: boolean;
+            standupRegistrationId: string | null;
+          }>
+        >`
+          SELECT id, "passNumber", status, "standupDiscountUsed", "standupRegistrationId"
+          FROM "PassPurchase"
+          WHERE UPPER("passNumber") = ${enteredPassId}
+          FOR UPDATE
+        `;
+
+        if (!lockedPasses || lockedPasses.length === 0) {
+          throw new HttpError("Invalid or inactive Festival Pass.", 400);
+        }
+
+        const passRow = lockedPasses[0];
+
+        if (passRow.status !== "CONFIRMED") {
+          throw new HttpError("Invalid or inactive Festival Pass.", 400);
+        }
+
+        if (passRow.standupDiscountUsed || passRow.standupRegistrationId) {
+          throw new HttpError("This Festival Pass has already been used for Standup Comedy.", 400);
+        }
+
+        // Verify pass payment status
+        const passPayment = await tx.payment.findFirst({
+          where: { passPurchaseId: passRow.id },
+        });
+
+        if (!passPayment || (passPayment.status !== PaymentStatus.SUCCESS && passPayment.amount > 0)) {
+          throw new HttpError("Invalid or inactive Festival Pass.", 400);
+        }
+
+        // Prevent duplicate usage from any existing active registration
+        const existingRegWithPass = await tx.registration.findFirst({
+          where: {
+            appliedPassId: passRow.passNumber,
+            status: { in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING] },
+          },
+        });
+
+        if (existingRegWithPass) {
+          throw new HttpError("This Festival Pass has already been used for Standup Comedy.", 400);
+        }
+
+        appliedPassNumber = passRow.passNumber;
+        passDiscountAmount = Math.max(0, eventLock.fee - 49); // 199 - 49 = 150
+        finalPayableFee = 49;
+      }
+
+      // 9. Generate unique registration number with duplicate protection
+      let registrationNumber = generateRegistrationNumber();
+      let regIdAttempts = 0;
+      while (await tx.registration.findUnique({ where: { registrationNumber } })) {
+        registrationNumber = generateRegistrationNumber();
+        regIdAttempts++;
+        if (regIdAttempts > 10) throw new HttpError("Failed to generate unique Registration ID", 500);
+      }
+
+      const isFreeEvent = finalPayableFee <= 0;
       const initialStatus = isFreeEvent
         ? RegistrationStatus.CONFIRMED
         : RegistrationStatus.PENDING;
 
-      // 9. Create Registration record (supports optional userId and records email verification)
+      // 10. Create Registration record (supports optional userId and records email verification)
       const registration = await tx.registration.create({
         data: {
           registrationNumber,
@@ -329,15 +488,32 @@ export class RegistrationService {
           scholarNumber,
           enrollmentNumber,
           collegeName,
+          institute,
           course,
           year,
+          semester,
           city,
           isEmailVerified: true,
           emailVerifiedAt: new Date(),
+          confirmationEmailSent: isFreeEvent,
+          confirmationEmailSentAt: isFreeEvent ? new Date() : null,
+          appliedPassId: appliedPassNumber,
+          discountAmount: passDiscountAmount,
         },
       });
 
-      // 10. Create initial Payment record
+      // 11. Mark Pass as used for Standup Comedy atomically
+      if (appliedPassNumber) {
+        await tx.passPurchase.update({
+          where: { passNumber: appliedPassNumber },
+          data: {
+            standupDiscountUsed: true,
+            standupRegistrationId: registration.registrationNumber,
+          },
+        });
+      }
+
+      // 12. Create initial Payment record with backend-authoritative amount
       const initialPaymentMethod = normalizePaymentMethod(input.paymentMethod);
 
       if (isFreeEvent) {
@@ -356,7 +532,7 @@ export class RegistrationService {
       } else {
         await tx.payment.create({
           data: {
-            amount: eventLock.fee,
+            amount: finalPayableFee,
             currency: "INR",
             method: initialPaymentMethod,
             status: PaymentStatus.PENDING,
@@ -391,10 +567,24 @@ export class RegistrationService {
         ? VerificationService.issuePaymentToken(email, "REGISTRATION_PAYMENT", registration.id)
         : null;
 
-      return {
+      const registrationResult = {
         ...(createdRegistration as unknown as RegistrationDetail),
         paymentToken,
       };
+
+      // 13. Dispatch confirmation email for free event registrations
+      if (isFreeEvent && createdRegistration) {
+        try {
+          await emailService.sendRegistrationConfirmation(email, createdRegistration as any);
+        } catch (err: any) {
+          console.error(
+            "[RegistrationService] Non-fatal error sending free event confirmation email:",
+            err?.message
+          );
+        }
+      }
+
+      return registrationResult;
     });
   }
 

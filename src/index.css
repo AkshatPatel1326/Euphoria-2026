@@ -214,6 +214,43 @@
   animation: shimmer 3s ease-in-out infinite;
 }
 
+@keyframes shimmer-slide {
+  0% {
+    transform: translateX(-120%);
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  45% {
+    transform: translateX(120%);
+    opacity: 1;
+    animation-timing-function: linear;
+  }
+  48% {
+    transform: translateX(120%);
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  50% {
+    transform: translateX(-120%);
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  95% {
+    transform: translateX(-120%);
+    opacity: 0;
+    animation-timing-function: linear;
+  }
+  100% {
+    transform: translateX(-120%);
+    opacity: 1;
+  }
+}
+
+.animate-shimmer-slide {
+  animation: shimmer-slide 3s infinite;
+  will-change: transform, opacity;
+}
+
 .animate-spin-slow {
   animation: spin-slow 20s linear infinite;
 }
@@ -266,6 +303,7 @@
   .animate-float,
   .animate-glow-pulse,
   .animate-shimmer,
+  .animate-shimmer-slide,
   .animate-spin-slow {
     animation: none !important;
   }
@@ -273,4 +311,18 @@
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
   }
+}
+
+/* Caret blinking animation for OTP inputs */
+@keyframes caret-blink {
+  0%, 70%, 100% {
+    opacity: 1;
+  }
+  20%, 50% {
+    opacity: 0;
+  }
+}
+
+.animate-caret-blink {
+  animation: caret-blink 1.2s ease-in-out infinite;
 }

@@ -11,6 +11,7 @@ import type {
   Schedule,
   Pass,
   PassPurchase,
+  PassHolder,
   Sponsor,
   Registration,
   Team,
@@ -148,7 +149,9 @@ export interface CreateRegistrationInput {
   enrollmentNumber?: string;
   collegeName?: string;
   course?: string;
+  institute?: string;
   year?: string;
+  semester?: string;
   city?: string;
   // Team details for group events
   teamName?: string;
@@ -157,6 +160,8 @@ export interface CreateRegistrationInput {
   paymentMethod?: PaymentMethod | string;
   // Verification token for guest registrations
   verificationToken?: string;
+  // Festival Pass ID for Standup Comedy discount
+  festivalPassId?: string;
 }
 
 export interface PaymentSimulationInput {
@@ -178,6 +183,9 @@ export interface InitiatePaymentResult {
   paymentUrl?: string;
   txnid: string;
   amount: number;
+  registrationStatus?: string;
+  passPurchaseStatus?: string;
+  payment?: { id: string; status: string };
   // If simulation mode
   simulationResult?: unknown;
 }
@@ -196,6 +204,12 @@ export interface RegistrationDetail extends Registration {
   payment?: Payment | null;
 }
 
+export interface PassRecipientInput {
+  fullName: string;
+  email: string;
+  phone: string;
+}
+
 export interface CreatePassPurchaseInput {
   passId: string;
   quantity?: number;
@@ -204,13 +218,18 @@ export interface CreatePassPurchaseInput {
   phone: string;
   participantCategory: ParticipantCategory | string;
   collegeName?: string;
+  institute?: string;
+  year?: string;
+  semester?: string;
   verificationToken?: string;
   paymentMethod?: PaymentMethod | string;
+  recipients?: PassRecipientInput[];
 }
 
 export interface PassPurchaseDetail extends PassPurchase {
   pass: Pass;
   payment?: Payment | null;
+  holders?: PassHolder[];
 }
 
 // ─────────────────────────────────────────────────────────────

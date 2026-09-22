@@ -42,12 +42,13 @@ async function main() {
     where: whereEmailFilter ? { email: whereEmailFilter } : undefined,
   });
 
-  // Test events and test category
-  const testCategory = await prisma.category.findUnique({
-    where: { slug: "test-category" },
+  // Test events and test categories
+  const testCategories = await prisma.category.findMany({
+    where: { slug: { in: ["test", "test-category"] } },
   });
-  const testEvents = testCategory
-    ? await prisma.event.findMany({ where: { categoryId: testCategory.id } })
+  const testCategoryIds = testCategories.map((c) => c.id);
+  const testEvents = testCategoryIds.length > 0
+    ? await prisma.event.findMany({ where: { categoryId: { in: testCategoryIds } } })
     : [];
 
   // Test users to remove (all test users except admin@sageuniversity.in)
@@ -68,15 +69,15 @@ async function main() {
   console.log(`   - Pass Purchases:        ${passPurchasesCount} record(s)`);
   console.log(`   - Verification OTPs:     ${otpsCount} record(s)`);
   console.log(`   - Test Events:           ${testEvents.length} record(s) (${testEvents.map((e) => e.name).join(", ") || "none"})`);
-  console.log(`   - Test Category:         ${testCategory ? "1 ('test-category')" : "0"}`);
+  console.log(`   - Test Categories:       ${testCategories.length} (${testCategories.map((c) => c.slug).join(", ") || "none"})`);
   console.log(`   - Test Users:            ${testUsers.length} record(s) (${testUsers.map((u) => u.email).join(", ") || "none"})\n`);
 
   console.log("🛡️  PRESERVED PERMANENT FESTIVAL CONFIGURATION:");
   const officialCategoriesCount = await prisma.category.count({
-    where: { slug: { not: "test-category" } },
+    where: { slug: { notIn: ["test", "test-category"] } },
   });
   const officialEventsCount = await prisma.event.count({
-    where: { categoryId: { not: testCategory?.id || "" } },
+    where: { categoryId: { notIn: testCategoryIds } },
   });
   const officialPassesCount = await prisma.pass.count();
   const officialSponsorsCount = await prisma.sponsor.count();
@@ -142,10 +143,10 @@ async function main() {
       await tx.verificationOtp.deleteMany({});
     }
 
-    // 7. Delete Test Events & Test Category
-    if (testCategory) {
-      await tx.event.deleteMany({ where: { categoryId: testCategory.id } });
-      await tx.category.delete({ where: { id: testCategory.id } });
+    // 7. Delete Test Events & Test Categories
+    if (testCategoryIds.length > 0) {
+      await tx.event.deleteMany({ where: { categoryId: { in: testCategoryIds } } });
+      await tx.category.deleteMany({ where: { id: { in: testCategoryIds } } });
     }
 
     // 8. Delete Test Users (preserving admin@sageuniversity.in)

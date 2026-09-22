@@ -42,14 +42,19 @@ export function ShimmerButton({
       {/* Shimmer sweep overlay */}
       {!reducedMotion && (
         <span
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: `linear-gradient(105deg, transparent 40%, ${shimmerColor} 45%, ${shimmerColor} 55%, transparent 60%)`,
-            backgroundSize: `${shimmerSize} 100%`,
-            animation: `shimmer ${shimmerDuration} ease-in-out infinite`,
-            borderRadius,
-          }}
-        />
+          className="absolute inset-0 pointer-events-none overflow-hidden rounded-[inherit]"
+          style={{ borderRadius }}
+          aria-hidden="true"
+        >
+          <span
+            className="absolute inset-0 pointer-events-none animate-shimmer-slide"
+            style={{
+              background: `linear-gradient(105deg, transparent 25%, ${shimmerColor} 50%, transparent 75%)`,
+              animation: `shimmer-slide ${shimmerDuration} infinite`,
+              borderRadius,
+            }}
+          />
+        </span>
       )}
       {/* Glow on hover */}
       <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-[inherit]"

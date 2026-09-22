@@ -6,13 +6,218 @@ import { Marquee, MarqueeItem } from "@/components/magicui/marquee";
 import { ShimmerButton } from "@/components/magicui/shimmer-button";
 import { AnimatedGradientText } from "@/components/magicui/animated-gradient-text";
 
+/* ── Cinematic photo slideshow ───────────────────────────────── */
+interface SlideConfig {
+  src: string;
+  position: string;
+}
+
+const SLIDESHOW_CONFIG: SlideConfig[] = [
+  {
+    // 1. AS (Akhil Sachdeva full-stage shot): performer on stage-right, head below header
+    src: "/assets/AS.webp",
+    position: "65% 22%",
+  },
+  {
+    // 2. AS2 (Akhil Sachdeva close-up): upper-third focus so head is below header
+    src: "/assets/AS2.webp",
+    position: "50% 14%",
+  },
+  {
+    // 3. DR (Deepali Roy): center performer's face and upper body in hero middle
+    src: "/assets/DR.webp",
+    position: "52% 38%",
+  },
+  {
+    // 4. GV (Gajendra Verma hand raised): top-align to keep raised hand & head below navbar
+    src: "/assets/GV.webp",
+    position: "50% 12%",
+  },
+  {
+    // 5. GV2 (Gajendra Verma with guitar): centered framing for singer + acoustic guitar
+    src: "/assets/GV2.webp",
+    position: "50% 28%",
+  },
+  {
+    // 6. DF (DEAFOX DJ): position on DJ performer (~70% height) in center of hero
+    src: "/assets/DF.webp",
+    position: "50% 72%",
+  },
+];
+
+const SLIDE_DURATION = 6000; // ms each slide is visible
+const FADE_DURATION  = 2000; // ms crossfade
+
+function CinematicSlideshow() {
+  const reducedMotion = useReducedMotion();
+
+  // Two persistent layers state:
+  // Layer A = currently visible image
+  // Layer B = next image
+  const [layers, setLayers] = useState({
+    layerA: { index: 0, opacity: 1 },
+    layerB: { index: 1, opacity: 0 },
+    activeLayer: "A" as "A" | "B",
+  });
+
+  const stateRef = useRef(layers);
+  stateRef.current = layers;
+
+  // Preload and decode all 6 images immediately on mount so transitions never stutter
+  const preloadedRef = useRef<HTMLImageElement[]>([]);
+  useEffect(() => {
+    preloadedRef.current = SLIDESHOW_CONFIG.map((slide) => {
+      const img = new Image();
+      img.src = slide.src;
+      if ("decode" in img) {
+        img.decode().catch(() => {});
+      }
+      return img;
+    });
+
+    return () => {
+      preloadedRef.current = [];
+    };
+  }, []);
+
+  // Seamless two-layer crossfade loop
+  useEffect(() => {
+    if (reducedMotion) return;
+
+    let holdTimer: ReturnType<typeof setTimeout> | null = null;
+    let fadeTimer: ReturnType<typeof setTimeout> | null = null;
+    let isMounted = true;
+
+    const scheduleCycle = () => {
+      holdTimer = setTimeout(() => {
+        if (!isMounted) return;
+
+        const currentActive = stateRef.current.activeLayer;
+
+        if (currentActive === "A") {
+          // Transition Layer A -> Layer B
+          // Layer A continuously fades 1 -> 0
+          // Layer B continuously fades 0 -> 1
+          setLayers({
+            layerA: { index: stateRef.current.layerA.index, opacity: 0 },
+            layerB: { index: stateRef.current.layerB.index, opacity: 1 },
+            activeLayer: "B",
+          });
+
+          // Wait until crossfade finishes completely
+          fadeTimer = setTimeout(() => {
+            if (!isMounted) return;
+
+            // Crossfade complete: Layer B is now active (opacity 1)
+            // Update inactive Layer A to prepare the next image in the loop while at opacity 0
+            const nextIdx =
+              (stateRef.current.layerB.index + 1) % SLIDESHOW_CONFIG.length;
+
+            setLayers({
+              layerA: { index: nextIdx, opacity: 0 },
+              layerB: { index: stateRef.current.layerB.index, opacity: 1 },
+              activeLayer: "B",
+            });
+
+            // Schedule the next transition cycle
+            scheduleCycle();
+          }, FADE_DURATION);
+        } else {
+          // Transition Layer B -> Layer A
+          // Layer B continuously fades 1 -> 0
+          // Layer A continuously fades 0 -> 1
+          setLayers({
+            layerA: { index: stateRef.current.layerA.index, opacity: 1 },
+            layerB: { index: stateRef.current.layerB.index, opacity: 0 },
+            activeLayer: "A",
+          });
+
+          // Wait until crossfade finishes completely
+          fadeTimer = setTimeout(() => {
+            if (!isMounted) return;
+
+            // Crossfade complete: Layer A is now active (opacity 1)
+            // Update inactive Layer B to prepare the next image in the loop while at opacity 0
+            const nextIdx =
+              (stateRef.current.layerA.index + 1) % SLIDESHOW_CONFIG.length;
+
+            setLayers({
+              layerA: { index: stateRef.current.layerA.index, opacity: 1 },
+              layerB: { index: nextIdx, opacity: 0 },
+              activeLayer: "A",
+            });
+
+            // Schedule the next transition cycle
+            scheduleCycle();
+          }, FADE_DURATION);
+        }
+      }, SLIDE_DURATION);
+    };
+
+    scheduleCycle();
+
+    return () => {
+      isMounted = false;
+      if (holdTimer) clearTimeout(holdTimer);
+      if (fadeTimer) clearTimeout(fadeTimer);
+    };
+  }, [reducedMotion]);
+
+  const slideA = SLIDESHOW_CONFIG[layers.layerA.index];
+  const slideB = SLIDESHOW_CONFIG[layers.layerB.index];
+
+  return (
+    <div
+      className="absolute inset-0 overflow-hidden pointer-events-none"
+      style={{ opacity: 0.58 }}
+      aria-hidden="true"
+    >
+      {/* Persistent Layer A */}
+      <div
+        className="absolute inset-0 bg-cover bg-no-repeat pointer-events-none"
+        style={{
+          backgroundImage: `url(${slideA.src})`,
+          backgroundPosition: slideA.position,
+          opacity: reducedMotion ? 1 : layers.layerA.opacity,
+          zIndex: layers.activeLayer === "A" ? 2 : 1,
+          transition: reducedMotion
+            ? "none"
+            : `opacity ${FADE_DURATION}ms ease-in-out`,
+          willChange: "opacity",
+        }}
+      />
+
+      {/* Persistent Layer B */}
+      <div
+        className="absolute inset-0 bg-cover bg-no-repeat pointer-events-none"
+        style={{
+          backgroundImage: `url(${slideB.src})`,
+          backgroundPosition: slideB.position,
+          opacity: reducedMotion ? 0 : layers.layerB.opacity,
+          zIndex: layers.activeLayer === "B" ? 2 : 1,
+          transition: reducedMotion
+            ? "none"
+            : `opacity ${FADE_DURATION}ms ease-in-out`,
+          willChange: "opacity",
+        }}
+      />
+    </div>
+  );
+}
+
 /* ── Cinematic animated background ──────────────────────────── */
 function HeroBackground() {
   const reducedMotion = useReducedMotion();
 
   return (
     <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-      <div className="absolute inset-0 bg-euphoria-dark" />
+      {/* LAYER 0: Cinematic photo slideshow — deepest layer */}
+      <CinematicSlideshow />
+
+      {/* LAYER 1: Primary dark base that lets photos breathe */}
+      <div className="absolute inset-0 bg-euphoria-dark/45" />
+
+      {/* LAYER 2: Purple/teal radial colour washes — same as before */}
       <div
         className="absolute inset-0"
         style={{
@@ -77,6 +282,8 @@ function HeroBackground() {
           }}
         />
       </motion.div>
+
+      {/* LAYER 3: Edge vignettes — keep text readable near borders */}
       <div className="absolute inset-0 bg-gradient-to-b from-euphoria-dark/80 via-transparent to-euphoria-dark" />
       <div className="absolute inset-0 bg-gradient-to-r from-euphoria-dark/60 via-transparent to-euphoria-dark/60" />
       <div className="noise-overlay absolute inset-0" />
@@ -84,31 +291,40 @@ function HeroBackground() {
   );
 }
 
-/* ── "JOY OF COLOURS" cinematic reveal ───────────────────────
+
+/* ── Hero intro text loop timing configuration ────────────────── */
+const HERO_INTRO_CONFIG = {
+  celebrationEnterDuration: 800,  // ms enter transition for "THE CELEBRATION / BEYOND BOUNDARIES"
+  celebrationHoldDuration: 1800,  // ms hold "THE CELEBRATION / BEYOND BOUNDARIES"
+  celebrationExitDuration: 600,   // ms exit transition
+  gapDuration: 150,               // ms breathing gap between transitions
+  sageEuphoriaEnterDuration: 600, // ms enter transition for "SAGE EUPHORIA"
+  sageEuphoriaHoldDuration: 2500, // ms hold "SAGE EUPHORIA" (~2–3 seconds)
+  sageEuphoriaExitDuration: 600,  // ms exit transition
+};
+
+/* ── Opening tagline cinematic reveal ────────────────────────
  *
- *  ACT 1 (phase 0→1→2): Enter + hold
- *    opacity 0→1, blur 12px→0, scale 0.94→1  (0.8s ease)
- *    then hold
- *
- *  ACT 2 (phase 2→3): Exit
- *    opacity 1→0, blur 0→6px, scale 1→1.03   (0.6s ease-in)
+ *  Continuous seamless loop choreography:
+ *    Phase 1: Enter (0.8s ease)
+ *    Phase 2: Hold
+ *    Phase 3: Exit (0.6s ease-in)
+ *    Phase 4..8: Dormant while SAGE EUPHORIA takes center stage
  *
  *  No vertical movement whatsoever.
  *  ────────────────────────────────────────────────────────────── */
-function ColourReveal({ phase }: { phase: number }) {
+function TaglineText({
+  phase,
+  className = "",
+}: {
+  phase: number;
+  className?: string;
+}) {
   const reducedMotion = useReducedMotion();
+  if (reducedMotion) return null;
 
-  /*
-   * phase 0 = dark (waiting)
-   * phase 1 = entering (0.8s blur→sharp, scale 0.94→1)
-   * phase 2 = holding (fully visible)
-   * phase 3 = exiting (0.6s fade out, scale 1→1.03, blur→subtle)
-   * phase 4 = gone (hero content shown)
-   */
-
-  const isDark = phase <= 0;
+  const isDark = phase <= 0 || phase >= 4;
   const isEntering = phase === 1;
-  const isHolding = phase === 2;
   const isExiting = phase === 3;
 
   const textOpacity = isDark ? 0 : isExiting ? 0 : 1;
@@ -121,6 +337,52 @@ function ColourReveal({ phase }: { phase: number }) {
       ? "all 0.6s ease-in"
       : "all 0.15s ease";
 
+  return (
+    <div
+      style={{
+        opacity: textOpacity,
+        transform: `scale(${textScale})`,
+        filter: textBlur,
+        transition: textTransition,
+      }}
+      className={`text-center select-none ${className}`}
+      aria-hidden={phase < 1 || phase > 3}
+    >
+      <span className="block text-[clamp(1.35rem,5vw,4.25rem)] font-black tracking-[0.08em] sm:tracking-[0.1em] text-white/90 leading-[1.08]">
+        THE CELEBRATION
+      </span>
+      <span className="block text-[clamp(1.75rem,6.5vw,5.5rem)] font-black tracking-[0.06em] sm:tracking-[0.08em] bg-clip-text text-transparent bg-gradient-to-r from-euphoria-gold via-euphoria-purple to-euphoria-aqua leading-[1.1] mt-2 sm:mt-2.5 md:mt-3">
+        BEYOND BOUNDARIES
+      </span>
+    </div>
+  );
+}
+
+/* ── Opening tagline cinematic reveal ────────────────────────
+ *
+ *  Continuous seamless loop choreography:
+ *    Phase 1: Enter (0.8s ease)
+ *    Phase 2: Hold
+ *    Phase 3: Exit (0.6s ease-in)
+ *    Phase 4..8: Dormant while SAGE EUPHORIA takes center stage
+ *
+ *  No vertical movement whatsoever.
+ *  ────────────────────────────────────────────────────────────── */
+function ColourReveal({ phase }: { phase: number }) {
+  const reducedMotion = useReducedMotion();
+
+  /*
+   * phase 0 = dark (waiting)
+   * phase 1 = entering (0.8s blur→sharp, scale 0.94→1)
+   * phase 2 = holding (fully visible)
+   * phase 3 = exiting (0.6s fade out, scale 1→1.03, blur→subtle)
+   * phase 4..8 = dormant (opacity 0)
+   */
+
+  const isDark = phase <= 0 || phase >= 4;
+  const isEntering = phase === 1;
+  const isExiting = phase === 3;
+
   const glowOpacity = isDark ? 0 : isExiting ? 0 : 1;
   const glowTransition = isEntering
     ? "opacity 1.2s ease-out"
@@ -128,12 +390,17 @@ function ColourReveal({ phase }: { phase: number }) {
       ? "opacity 0.6s ease-in"
       : "opacity 0.15s ease";
 
-  if (reducedMotion || phase >= 4) {
+  if (reducedMotion) {
     return null;
   }
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20" aria-hidden="true">
+    <div
+      className={`absolute inset-0 flex items-center justify-center pointer-events-none z-20 transition-opacity duration-300 ${
+        phase >= 1 && phase <= 3 ? "opacity-100" : "opacity-0"
+      }`}
+      aria-hidden="true"
+    >
       {/* Flowing colour glows behind the text */}
       <div
         className="absolute inset-0"
@@ -201,26 +468,8 @@ function ColourReveal({ phase }: { phase: number }) {
         />
       </div>
 
-      {/* "JOY OF COLOURS" — one cohesive centered group, zero vertical movement */}
-      <div
-        style={{
-          opacity: textOpacity,
-          transform: `scale(${textScale})`,
-          filter: textBlur,
-          transition: textTransition,
-        }}
-        className="text-center select-none"
-      >
-        <span className="block text-[7vw] sm:text-[5.5vw] md:text-[4vw] lg:text-[3.2vw] font-black tracking-[0.12em] text-white/80">
-          JOY OF
-        </span>
-        <span className="block text-[10vw] sm:text-[8.5vw] md:text-[6vw] lg:text-[5vw] font-black tracking-[0.08em] bg-clip-text text-transparent bg-gradient-to-r from-euphoria-gold via-euphoria-purple to-euphoria-aqua">
-          COLOURS
-        </span>
-        <span className="block mt-3 text-[9px] sm:text-[10px] tracking-[0.5em] uppercase text-white/15">
-          SAGE Euphoria 2026
-        </span>
-      </div>
+      {/* "THE CELEBRATION / BEYOND BOUNDARIES" — desktop centered group */}
+      <TaglineText phase={phase} className="hidden lg:block px-4" />
     </div>
   );
 }
@@ -302,43 +551,115 @@ function OrbitalRing() {
   );
 }
 
+interface TimeRemaining {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+}
+
+/* ── Festival Countdown Target Date ─────────────────────────── */
+const EUPHORIA_START_DATE = "2026-10-28T10:00:00+05:30";
+
+function calculateTimeRemaining(targetDateStr: string): TimeRemaining {
+  const target = new Date(targetDateStr).getTime();
+  const now = Date.now();
+  const diff = target - now;
+
+  if (diff <= 0 || isNaN(diff)) {
+    return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+  }
+
+  const seconds = Math.floor((diff / 1000) % 60);
+  const minutes = Math.floor((diff / (1000 * 60)) % 60);
+  const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+  return {
+    days: Math.max(0, days),
+    hours: Math.max(0, hours),
+    minutes: Math.max(0, minutes),
+    seconds: Math.max(0, seconds),
+  };
+}
+
 /* ── Main Hero ──────────────────────────────────────────────── */
 export function Hero() {
   const heroRef = useRef<HTMLElement>(null);
   const reducedMotion = useReducedMotion();
 
+  const [timeLeft, setTimeLeft] = useState<TimeRemaining>(() =>
+    calculateTimeRemaining(EUPHORIA_START_DATE)
+  );
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTimeRemaining(EUPHORIA_START_DATE));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   /*
-   * Strict sequential choreography:
-   *
-   * 0.0s  phase 0  Dark atmospheric background
-   * 0.7s  phase 1  JOY OF COLOURS enters  (0.8s transition)
-   * 1.5s  phase 2  JOY OF COLOURS holds
-   * 2.2s  phase 3  JOY OF COLOURS exits   (0.6s transition)
-   * 2.8s  phase 4  Breathing gap — both invisible
-   * 3.0s  phase 5  SAGE EUPHORIA enters    (0.9s transition)
-   * 3.9s  phase 6  SAGE EUPHORIA settled — tagline + CTA stagger in
+   * Continuous seamless loop:
+   * 1. Show THE CELEBRATION / BEYOND BOUNDARIES
+   * 2. Transition that reveals SAGE EUPHORIA
+   * 3. Keep SAGE EUPHORIA visible for ~2–3 seconds
+   * 4. Transition back to THE CELEBRATION / BEYOND BOUNDARIES
+   * 5. Repeat continuously
    */
   const [introPhase, setIntroPhase] = useState<number>(() =>
     reducedMotion ? 6 : 0
   );
+  const [hasSettled, setHasSettled] = useState<boolean>(() => Boolean(reducedMotion));
 
   useEffect(() => {
     if (reducedMotion) return;
 
-    const timers = [
-      setTimeout(() => setIntroPhase(1), 700),   // 0.7s  JOY OF COLOURS enters
-      setTimeout(() => setIntroPhase(2), 1500),   // 1.5s  holds
-      setTimeout(() => setIntroPhase(3), 2200),   // 2.2s  JOY OF COLOURS exits
-      setTimeout(() => setIntroPhase(4), 2800),   // 2.8s  breathing gap
-      setTimeout(() => setIntroPhase(5), 3000),   // 3.0s  SAGE EUPHORIA enters
-      setTimeout(() => setIntroPhase(6), 3900),   // 3.9s  settled
+    let isMounted = true;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const timeline = [
+      { phase: 1, duration: HERO_INTRO_CONFIG.celebrationEnterDuration },
+      { phase: 2, duration: HERO_INTRO_CONFIG.celebrationHoldDuration },
+      { phase: 3, duration: HERO_INTRO_CONFIG.celebrationExitDuration },
+      { phase: 4, duration: HERO_INTRO_CONFIG.gapDuration },
+      { phase: 5, duration: HERO_INTRO_CONFIG.sageEuphoriaEnterDuration },
+      { phase: 6, duration: HERO_INTRO_CONFIG.sageEuphoriaHoldDuration },
+      { phase: 7, duration: HERO_INTRO_CONFIG.sageEuphoriaExitDuration },
+      { phase: 8, duration: HERO_INTRO_CONFIG.gapDuration },
     ];
 
-    return () => timers.forEach(clearTimeout);
+    let stepIndex = 0;
+
+    const runStep = () => {
+      if (!isMounted) return;
+
+      const currentStep = timeline[stepIndex];
+      setIntroPhase(currentStep.phase);
+
+      if (currentStep.phase === 6) {
+        setHasSettled(true);
+      }
+
+      timer = setTimeout(() => {
+        if (!isMounted) return;
+        stepIndex = (stepIndex + 1) % timeline.length;
+        runStep();
+      }, currentStep.duration);
+    };
+
+    // Initial brief start delay
+    timer = setTimeout(runStep, 200);
+
+    return () => {
+      isMounted = false;
+      if (timer) clearTimeout(timer);
+    };
   }, [reducedMotion]);
 
-  const heroReady = introPhase >= 5;
-  const heroSettled = introPhase >= 6;
+  const heroReady = introPhase === 5 || introPhase === 6;
+  const heroSettled = hasSettled;
 
   const scrollTo = (id: string) => {
     document.querySelector(id)?.scrollIntoView({ behavior: "smooth" });
@@ -367,89 +688,72 @@ export function Hero() {
         speed={0.6}
       />
 
-      {/* ── ACT 1+2: "JOY OF COLOURS" reveal ── */}
+      {/* ── ACT 1+2: Intro tagline reveal ── */}
       <ColourReveal phase={introPhase} />
 
       {/* ── ACT 3: SAGE EUPHORIA hero — same center position, no vertical movement ── */}
-      <div className="relative z-10 flex flex-col items-center text-center px-6 sm:px-8 max-w-[1536px] mx-auto">
-        {/* Large written SAGE EUPHORIA typography — enters from center, scale+opacity only */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96 }}
-          animate={
-            heroReady
-              ? { opacity: 1, scale: 1 }
-              : { opacity: 0, scale: 0.96 }
-          }
-          transition={{
-            duration: 0.9,
-            delay: heroReady ? 0 : 0,
-            ease: [0.25, 0.1, 0.25, 1],
-          }}
-          className="mb-4 sm:mb-6 w-full"
-          style={{ filter: heroReady ? "blur(0px)" : "blur(10px)", transition: "filter 0.9s cubic-bezier(0.25, 0.1, 0.25, 1)" }}
-        >
-          <h1 className="tracking-tight">
-            <span className="block text-[9vw] sm:text-[7.7vw] md:text-[6.3vw] lg:text-[5vw] font-black text-white/90 leading-[0.88]">
-              SAGE
-            </span>
-            <span className="block text-[11vw] sm:text-[9vw] md:text-[7.2vw] lg:text-[5.9vw] font-black text-transparent bg-clip-text bg-gradient-to-r from-euphoria-gold via-euphoria-purple to-euphoria-aqua leading-[1.15]">
-              Euphoria
-            </span>
-          </h1>
-        </motion.div>
+      <div className="relative z-10 flex flex-col items-center text-center px-4 sm:px-8 max-w-[1536px] mx-auto w-full pt-16 sm:pt-20 lg:pt-0 pb-28 sm:pb-32 lg:pb-0">
+        {/* Headline Container with stable minimum height on mobile so Tagline and SAGE Euphoria share the exact same visual zone without shifting CTAs */}
+        <div className="relative mb-4 sm:mb-6 w-full flex items-center justify-center min-h-[105px] sm:min-h-[125px] lg:min-h-0">
+          {/* Mobile-only tagline overlay: strictly aligned in headline zone, guaranteed safe separation from CTA buttons */}
+          <div className="lg:hidden absolute inset-0 flex items-center justify-center pointer-events-none">
+            <TaglineText phase={introPhase} className="px-2" />
+          </div>
+
+          {/* Large written SAGE EUPHORIA typography — enters from center, scale+opacity only */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={
+              heroReady
+                ? { opacity: 1, scale: 1 }
+                : { opacity: 0, scale: 0.96 }
+            }
+            transition={{
+              duration: 0.6,
+              delay: heroReady ? 0 : 0,
+              ease: [0.25, 0.1, 0.25, 1],
+            }}
+            className="w-full"
+            style={{ filter: heroReady ? "blur(0px)" : "blur(10px)", transition: "filter 0.6s cubic-bezier(0.25, 0.1, 0.25, 1)" }}
+          >
+            <h1 className="tracking-tight">
+              <span className="block text-[clamp(2.5rem,7.5vw,7.5rem)] font-black text-white/90 leading-[0.88]">
+                SAGE
+              </span>
+              <span className="block text-[clamp(3.25rem,9.5vw,9.5rem)] font-black text-transparent bg-clip-text bg-gradient-to-r from-euphoria-gold via-euphoria-purple to-euphoria-aqua leading-[1.12]">
+                Euphoria
+              </span>
+            </h1>
+          </motion.div>
+        </div>
 
         {/* Year badge */}
         <motion.div
           initial={{ opacity: 0 }}
-          animate={heroSettled ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 0.6, delay: heroSettled ? 0 : 0 }}
-          className="mb-5 sm:mb-6"
+          animate={heroReady ? { opacity: 1 } : { opacity: 0 }}
+          transition={{ duration: 0.4, delay: heroReady ? 0 : 0 }}
+          className="mb-6 sm:mb-8"
         >
-          <span className="inline-block px-4 py-1.5 text-[9px] sm:text-[10px] font-semibold tracking-[0.4em] uppercase text-euphoria-gold/70 border border-euphoria-gold/20 rounded-full bg-euphoria-gold/[0.04]">
+          <span className="inline-block px-4 py-1.5 text-[10px] sm:text-xs font-semibold tracking-[0.4em] uppercase text-euphoria-gold/80 border border-euphoria-gold/30 rounded-full bg-euphoria-gold/[0.06] backdrop-blur-sm">
             2026 Edition
           </span>
         </motion.div>
-
-        {/* Theme — Joy of Colours */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={heroSettled ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 0.6, delay: heroSettled ? 0.15 : 0 }}
-          className="text-sm sm:text-base md:text-lg font-light tracking-[0.2em] uppercase"
-        >
-          <AnimatedGradientText
-            gradient="linear-gradient(90deg, #AF9947, #A232A0, #176F63, #3EEED5, #AF9947)"
-            speed={4}
-          >
-            Joy of Colours
-          </AnimatedGradientText>
-        </motion.p>
-
-        {/* Subtext */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={heroSettled ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 0.6, delay: heroSettled ? 0.3 : 0 }}
-          className="mt-3 text-[10px] sm:text-[11px] tracking-[0.2em] uppercase text-white/55 max-w-md"
-        >
-          Celebrating diversity, creativity, and the emotions that colours bring to life
-        </motion.p>
 
         {/* CTAs */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={heroSettled ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 0.6, delay: heroSettled ? 0.45 : 0 }}
-          className="mt-10 sm:mt-14 flex flex-col sm:flex-row gap-4"
+          transition={{ duration: 0.4, delay: heroSettled ? 0.15 : 0 }}
+          className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto items-center justify-center max-w-xs sm:max-w-none mx-auto"
         >
           <ShimmerButton
-            shimmerColor="rgba(62, 238, 213, 0.35)"
+            shimmerColor="rgba(62, 238, 213, 0.4)"
             shimmerDuration="3s"
-            background="rgba(62, 238, 213, 0.08)"
-            className="px-7 sm:px-9 py-3 sm:py-3.5"
+            background="rgba(62, 238, 213, 0.1)"
+            className="w-full sm:w-auto min-h-[44px] px-7 sm:px-9 py-3 sm:py-3.5 flex items-center justify-center border border-euphoria-aqua/30 focus-visible:ring-2 focus-visible:ring-euphoria-aqua focus-visible:outline-none cursor-pointer"
             onClick={() => scrollTo("#events")}
           >
-            <span className="text-euphoria-aqua font-semibold tracking-[0.2em] uppercase text-xs sm:text-sm">
+            <span className="text-euphoria-aqua font-bold tracking-[0.2em] uppercase text-xs sm:text-sm drop-shadow-[0_0_10px_rgba(62,238,213,0.3)]">
               Explore Events
             </span>
           </ShimmerButton>
@@ -457,28 +761,96 @@ export function Hero() {
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             onClick={() => scrollTo("#about")}
-            className="px-7 sm:px-9 py-3 sm:py-3.5 text-white/60 font-medium tracking-[0.15em] uppercase text-[11px] sm:text-xs border border-white/10 rounded-lg transition-all duration-300 hover:text-white/80 hover:border-white/20 hover:bg-white/[0.02]"
+            className="w-full sm:w-auto min-h-[44px] px-7 sm:px-9 py-3 sm:py-3.5 text-white/85 font-semibold tracking-[0.15em] uppercase text-[11px] sm:text-xs border border-white/20 bg-white/[0.03] rounded-lg transition-all duration-300 hover:text-white hover:border-white/40 hover:bg-white/[0.08] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-none cursor-pointer"
           >
             Discover Euphoria
           </motion.button>
         </motion.div>
       </div>
 
-      {/* Scroll indicator */}
+      {/* ── Lower Hero Countdown (replaces old scroll indicator) ── */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={heroSettled ? { opacity: 1 } : { opacity: 0 }}
-        transition={{ delay: 0.6, duration: 1 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
-      >          <span className="text-[9px] tracking-[0.35em] uppercase text-white/40">
-          Scroll
+        initial={{ opacity: 0, y: 8 }}
+        animate={heroSettled ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
+        transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
+        className="absolute bottom-4 sm:bottom-8 lg:bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center pointer-events-none select-none w-full max-w-md px-4"
+        aria-label="Euphoria 2026 Countdown"
+      >
+        {/* Atmospheric ambient glow */}
+        <motion.div
+          animate={reducedMotion ? {} : { opacity: [0.4, 0.7, 0.4], scale: [0.98, 1.02, 0.98] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -inset-x-12 -inset-y-8 pointer-events-none -z-10"
+          style={{
+            background:
+              "radial-gradient(ellipse 70% 55% at 50% 50%, rgba(62, 238, 213, 0.09) 0%, rgba(162, 50, 160, 0.06) 45%, transparent 72%)",
+          }}
+          aria-hidden="true"
+        />
+
+        {/* Editorial micro label */}
+        <span className="text-[9px] sm:text-[10px] md:text-[11px] font-semibold tracking-[0.38em] uppercase text-euphoria-gold/90 mb-2 sm:mb-2.5 drop-shadow-[0_1px_8px_rgba(175,153,71,0.25)]">
+          EUPHORIA 2026
         </span>
-        <div className="w-5 h-8 rounded-full border border-white/10 flex items-start justify-center p-1">
+
+        {/* Cinematic counters with subtle rhythm separators */}
+        <div className="flex items-center justify-center gap-2.5 sm:gap-5 md:gap-7">
+          <div className="flex flex-col items-center min-w-[50px] sm:min-w-[66px] md:min-w-[80px]">
+            <span className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-black tracking-tight text-white tabular-nums leading-none drop-shadow-[0_2px_14px_rgba(255,255,255,0.12)]">
+              {String(timeLeft.days).padStart(2, "0")}
+            </span>
+            <span className="text-[8px] sm:text-[9px] md:text-[10px] font-semibold tracking-[0.28em] uppercase text-white/70 sm:text-white/50 mt-1.5 sm:mt-2">
+              Days
+            </span>
+          </div>
+
           <motion.div
-            animate={{ y: [0, 10, 0] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-            className="w-1 h-2 rounded-full bg-euphoria-aqua/40"
+            animate={reducedMotion ? {} : { opacity: [0.3, 0.6, 0.3] }}
+            transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+            className="w-px h-6 sm:h-8 md:h-9 bg-gradient-to-b from-transparent via-white/30 to-transparent self-center -mt-3.5 sm:-mt-4"
+            aria-hidden="true"
           />
+
+          <div className="flex flex-col items-center min-w-[50px] sm:min-w-[66px] md:min-w-[80px]">
+            <span className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-black tracking-tight text-white tabular-nums leading-none drop-shadow-[0_2px_14px_rgba(255,255,255,0.12)]">
+              {String(timeLeft.hours).padStart(2, "0")}
+            </span>
+            <span className="text-[8px] sm:text-[9px] md:text-[10px] font-semibold tracking-[0.28em] uppercase text-white/70 sm:text-white/50 mt-1.5 sm:mt-2">
+              Hours
+            </span>
+          </div>
+
+          <motion.div
+            animate={reducedMotion ? {} : { opacity: [0.3, 0.6, 0.3] }}
+            transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+            className="w-px h-6 sm:h-8 md:h-9 bg-gradient-to-b from-transparent via-white/30 to-transparent self-center -mt-3.5 sm:-mt-4"
+            aria-hidden="true"
+          />
+
+          <div className="flex flex-col items-center min-w-[50px] sm:min-w-[66px] md:min-w-[80px]">
+            <span className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-black tracking-tight text-white tabular-nums leading-none drop-shadow-[0_2px_14px_rgba(255,255,255,0.12)]">
+              {String(timeLeft.minutes).padStart(2, "0")}
+            </span>
+            <span className="text-[8px] sm:text-[9px] md:text-[10px] font-semibold tracking-[0.28em] uppercase text-white/70 sm:text-white/50 mt-1.5 sm:mt-2">
+              Minutes
+            </span>
+          </div>
+
+          <motion.div
+            animate={reducedMotion ? {} : { opacity: [0.3, 0.6, 0.3] }}
+            transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+            className="w-px h-6 sm:h-8 md:h-9 bg-gradient-to-b from-transparent via-white/30 to-transparent self-center -mt-3.5 sm:-mt-4"
+            aria-hidden="true"
+          />
+
+          <div className="flex flex-col items-center min-w-[50px] sm:min-w-[66px] md:min-w-[80px]">
+            <span className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-black tracking-tight text-white tabular-nums leading-none drop-shadow-[0_2px_14px_rgba(255,255,255,0.12)]">
+              {String(timeLeft.seconds).padStart(2, "0")}
+            </span>
+            <span className="text-[8px] sm:text-[9px] md:text-[10px] font-semibold tracking-[0.28em] uppercase text-white/70 sm:text-white/50 mt-1.5 sm:mt-2">
+              Seconds
+            </span>
+          </div>
         </div>
       </motion.div>
     </section>

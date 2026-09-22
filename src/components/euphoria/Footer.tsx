@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
+import { ExternalLink } from "lucide-react";
 import { BlurFade } from "@/components/magicui/blur-fade";
 import { Marquee, MarqueeItem } from "@/components/magicui/marquee";
 
@@ -15,9 +16,9 @@ const footerLinks = [
 
 /* ── Closing statement lines ──────────────────────────────── */
 const closingLines = [
-  { text: "MORE HUES.", delay: 0 },
-  { text: "MORE PASSION.", delay: 0.25 },
-  { text: "MORE POWER.", delay: 0.5 },
+  { text: "MORE HUES", delay: 0 },
+  { text: "MORE PASSION", delay: 0.25 },
+  { text: "MORE POWER", delay: 0.5 },
 ];
 
 /* ── Cinematic background ─────────────────────────────────── */
@@ -123,7 +124,7 @@ function GradientDivider() {
 /* ── Main Footer ──────────────────────────────────────────── */
 export function Footer() {
   const footerRef = useRef<HTMLElement>(null);
-  const inView = useInView(footerRef, { once: true, margin: "-80px" });
+  const inView = useInView(footerRef, { once: true, margin: "-20px" });
 
   const scrollTo = (href: string) => {
     document.querySelector(href)?.scrollIntoView({ behavior: "smooth" });
@@ -139,20 +140,20 @@ export function Footer() {
       <FooterMarquee />
 
       {/* ═══ CINEMATIC CLOSING STATEMENT ═══════════════════════ */}
-      <div className="relative z-10 flex flex-col items-center justify-center py-28 sm:py-36 lg:py-44">
+      <div className="relative z-10 flex flex-col items-center justify-center py-12 sm:py-16 lg:py-20">
         <div className="flex flex-col items-center gap-3 sm:gap-4">
           {closingLines.map((line, i) => (
             <motion.div
               key={line.text}
-              initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}
+              initial={{ opacity: 0, y: 16, filter: "blur(6px)" }}
               animate={
                 inView
                   ? { opacity: 1, y: 0, filter: "blur(0px)" }
-                  : { opacity: 0, y: 20, filter: "blur(8px)" }
+                  : { opacity: 0, y: 16, filter: "blur(6px)" }
               }
               transition={{
-                duration: 0.8,
-                delay: 0.3 + line.delay,
+                duration: 0.45,
+                delay: 0.1 + line.delay * 0.5,
                 ease: [0.25, 0.1, 0.25, 1],
               }}
             >
@@ -200,86 +201,108 @@ export function Footer() {
       <div className="relative z-10 mx-auto max-w-[1536px] px-4 sm:px-6 lg:px-8">
         <GradientDivider />
 
-        {/* Top section */}
-        <BlurFade inViewMargin="-40px" className="mb-12">            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-10">
-            {/* Brand */}
-            <div>
-              <div className="flex items-center gap-3 mb-3">
-                <span className="text-lg font-bold tracking-widest text-euphoria-aqua/65">
+        <BlurFade inViewMargin="-30px" className="pb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-10">
+            {/* Brand & Official Link */}
+            <div className="lg:col-span-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <span className="text-lg font-bold tracking-widest text-euphoria-aqua/75">
                   SAGE
                 </span>
-                <span className="text-lg font-light tracking-widest text-white/55">
+                <span className="text-lg font-light tracking-widest text-white/70">
                   Euphoria
                 </span>
-                <span className="text-[8px] font-semibold tracking-wider text-euphoria-gold/55 border border-euphoria-gold/25 rounded px-1.5 py-0.5">
+                <span className="text-[8px] font-semibold tracking-wider text-euphoria-gold/70 border border-euphoria-gold/35 rounded px-1.5 py-0.5">
                   2026
                 </span>
               </div>
-              <p className="text-[11px] text-white/50 max-w-xs leading-relaxed">
+              <p className="text-xs text-white/65 sm:text-white/50 max-w-sm leading-relaxed">
                 SAGE University Indore&apos;s flagship annual festival — a
                 three-day celebration of culture, innovation, and sport.
               </p>
+              <div className="pt-1">
+                <a
+                  href="https://sageuniversity.in/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="SAGE University official website (opens in new tab)"
+                  className="inline-flex items-center gap-1.5 text-xs text-white/70 hover:text-euphoria-aqua transition-colors duration-200 group focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-euphoria-aqua/50 rounded"
+                >
+                  <span className="underline underline-offset-4 decoration-white/30 group-hover:decoration-euphoria-aqua">
+                    sageuniversity.in
+                  </span>
+                  <ExternalLink className="size-3 text-white/50 group-hover:text-euphoria-aqua transition-colors" />
+                </a>
+              </div>
             </div>
 
             {/* Navigation */}
-            <nav className="flex flex-wrap gap-x-6 gap-y-2">
-              {footerLinks.map((link) => (
-                <button
-                  key={link.href}
-                  onClick={() => scrollTo(link.href)}
-                  className="relative text-[11px] text-white/50 tracking-[0.15em] uppercase transition-colors duration-300 hover:text-euphoria-aqua/80 group"
-                >
-                  {link.label}
-                  <span className="absolute bottom-0 left-0 h-px w-0 bg-euphoria-aqua/30 transition-all duration-300 group-hover:w-full" />
-                </button>
-              ))}
-            </nav>
-          </div>
-        </BlurFade>
+            <div className="lg:col-span-3">
+              <span className="text-xs sm:text-[13px] tracking-[0.25em] uppercase text-white/90 font-bold block mb-3">
+                Navigation
+              </span>
+              <nav className="flex flex-col space-y-1 sm:space-y-2">
+                {footerLinks.map((link) => (
+                  <button
+                    key={link.href}
+                    onClick={() => scrollTo(link.href)}
+                    className="relative min-h-[36px] flex items-center py-1 sm:py-0.5 text-xs sm:text-[11px] text-white/75 sm:text-white/60 tracking-[0.15em] uppercase transition-colors duration-200 hover:text-euphoria-aqua group focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-euphoria-aqua/50 rounded text-left w-fit cursor-pointer"
+                  >
+                    <span>{link.label}</span>
+                    <span className="absolute bottom-0 left-0 h-px w-0 bg-euphoria-aqua/60 transition-all duration-200 group-hover:w-full" />
+                  </button>
+                ))}
+              </nav>
+            </div>
 
-        {/* Contact */}
-        <BlurFade delay={0.2} inViewMargin="-40px" className="mb-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div>
-              <span className="text-[8px] tracking-[0.3em] uppercase text-white/55 font-semibold block mb-2">
+            {/* Contact */}
+            <div className="lg:col-span-3">
+              <span className="text-xs sm:text-[13px] tracking-[0.25em] uppercase text-white/90 font-bold block mb-3">
                 Contact
               </span>
-              <p className="text-[11px] text-white/50 mb-0.5">
-                sage.euphoria@sageuniversity.in
-              </p>
-              <p className="text-[11px] text-white/50">
-                sponsorship@sageuniversity.in
-              </p>
+              <div className="space-y-2 text-xs text-white/65 sm:text-white/50">
+                <a
+                  href="mailto:sage.euphoria@sageuniversity.in"
+                  className="block min-h-[32px] flex items-center hover:text-white/90 transition-colors duration-200 break-all sm:break-normal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-euphoria-aqua/50 rounded w-fit"
+                >
+                  sage.euphoria@sageuniversity.in
+                </a>
+                <a
+                  href="mailto:sponsorship@sageuniversity.in"
+                  className="block min-h-[32px] flex items-center hover:text-white/90 transition-colors duration-200 break-all sm:break-normal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-euphoria-aqua/50 rounded w-fit"
+                >
+                  sponsorship@sageuniversity.in
+                </a>
+              </div>
             </div>
-            <div>
-              <span className="text-[8px] tracking-[0.3em] uppercase text-white/55 font-semibold block mb-2">
+
+            {/* Follow Us */}
+            <div className="lg:col-span-2">
+              <span className="text-xs sm:text-[13px] tracking-[0.25em] uppercase text-white/90 font-bold block mb-3">
                 Follow Us
               </span>
-              <p className="text-[11px] text-white/50">
-                Instagram: @sage.euphoria
+              <p className="text-xs text-white/65 sm:text-white/50">
+                Instagram:{" "}
+                <a
+                  href="https://www.instagram.com/sage.euphoria/reels/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="SAGE Euphoria on Instagram (opens in new tab)"
+                  className="text-white/80 hover:text-euphoria-aqua underline underline-offset-4 decoration-white/30 hover:decoration-euphoria-aqua transition-colors duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-euphoria-aqua/50 rounded"
+                >
+                  @sage.euphoria
+                </a>
               </p>
             </div>
           </div>
-        </BlurFade>
-
-        {/* University info */}
-        <BlurFade delay={0.25} inViewMargin="-40px" className="mb-8 pb-6 border-b border-white/[0.03]">
-          <span className="text-[8px] tracking-[0.3em] uppercase text-white/30 font-semibold block mb-2">
-            About SAGE University
-          </span>
-          <p className="text-[10px] text-white/50 leading-relaxed max-w-lg">
-            Established in 2007, SAGE University Indore is NAAC A+ accredited and
-            approved by UGC and AICTE, offering 131 programs across 14
-            multidisciplinary institutes.
-          </p>
         </BlurFade>
 
         {/* Bottom bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-5 border-t border-white/[0.03]">
-          <p className="text-[9px] text-white/35 tracking-wider">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 py-6 border-t border-white/[0.06]">
+          <p className="text-[11px] text-white/55 sm:text-white/40 tracking-wider">
             &copy; 2026 SAGE Euphoria. All rights reserved.
           </p>
-          <p className="text-[9px] text-white/35 tracking-wider">
+          <p className="text-[11px] text-white/55 sm:text-white/40 tracking-wider">
             SAGE University, Indore
           </p>
         </div>

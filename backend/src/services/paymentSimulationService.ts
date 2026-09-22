@@ -7,6 +7,7 @@ import {
 } from "../../generated/prisma/client";
 import { HttpError } from "../lib/errors";
 import { VerificationService } from "./verificationService";
+import { emailService } from "./emailService";
 import type {
   PaymentSimulationInput,
   RegistrationDetail,
@@ -127,8 +128,11 @@ export class PaymentSimulationService {
 
     const simTxnId = `SIM_TXN_${Date.now()}_${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
     const simRef = `SIM_REF_${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    const regId = registration.id;
+    const regEmail = registration.email;
+    const wasEmailSent = registration.confirmationEmailSent;
 
-    return await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       if (simulateStatus === "SUCCESS") {
         // Upsert payment record to SUCCESS
         let payment;
@@ -150,10 +154,14 @@ export class PaymentSimulationService {
             },
           });
         } else {
+          const simAmount = registration.discountAmount
+            ? Math.max(0, registration.event.fee - registration.discountAmount)
+            : registration.event.fee;
+
           payment = await tx.payment.create({
             data: {
               registrationId: registration.id,
-              amount: registration.event.fee,
+              amount: simAmount,
               currency: "INR",
               status: PaymentStatus.SUCCESS,
               method: paymentMethod,
@@ -173,8 +181,23 @@ export class PaymentSimulationService {
         // Update registration status to CONFIRMED
         const updatedReg = await tx.registration.update({
           where: { id: registration.id },
-          data: { status: RegistrationStatus.CONFIRMED },
+          data: {
+            status: RegistrationStatus.CONFIRMED,
+            confirmationEmailSent: true,
+            confirmationEmailSentAt: new Date(),
+          },
         });
+
+        // Ensure applied Festival Pass is marked used
+        if (registration.appliedPassId) {
+          await tx.passPurchase.updateMany({
+            where: { passNumber: registration.appliedPassId },
+            data: {
+              standupDiscountUsed: true,
+              standupRegistrationId: registration.registrationNumber,
+            },
+          });
+        }
 
         return {
           registrationId: updatedReg.id,
@@ -190,9 +213,9 @@ export class PaymentSimulationService {
             paidAt: payment.paidAt,
           },
           simulationDetails: {
-            simulated: true,
+            simulated: true as const,
             environment: process.env.NODE_ENV || "development",
-            mode: "DEVELOPMENT_SIMULATION",
+            mode: "DEVELOPMENT_SIMULATION" as const,
           },
         };
       } else {
@@ -251,13 +274,45 @@ export class PaymentSimulationService {
             paidAt: null,
           },
           simulationDetails: {
-            simulated: true,
+            simulated: true as const,
             environment: process.env.NODE_ENV || "development",
-            mode: "DEVELOPMENT_SIMULATION",
+            mode: "DEVELOPMENT_SIMULATION" as const,
           },
         };
       }
     });
+
+    if (simulateStatus === "SUCCESS" && !wasEmailSent) {
+      try {
+        const fullReg = await prisma.registration.findUnique({
+          where: { id: regId },
+          include: {
+            event: { include: { category: true } },
+            team: { include: { members: true } },
+            payment: true,
+          },
+        });
+        if (fullReg) {
+          await emailService.sendRegistrationConfirmation(regEmail, {
+            ...fullReg,
+            payment: {
+              amount: result.payment.amount,
+              status: "SUCCESS",
+              transactionId: simTxnId,
+              gatewayReference: simRef,
+              method: paymentMethod,
+            },
+          } as any);
+        }
+      } catch (err: any) {
+        console.error(
+          "[PaymentSimulationService] Non-fatal error dispatching registration confirmation email:",
+          err?.message
+        );
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -327,8 +382,12 @@ export class PaymentSimulationService {
     const isSuccess = input.simulateStatus !== "FAILED";
     const simTxnId = `SIM_PASS_TXN_${purchase.id}_${Date.now()}`;
     const simRef = `SIM_PASS_REF_${Date.now()}_${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    const passId = purchase.id;
+    const passEmail = purchase.email;
+    const wasPassEmailSent = purchase.confirmationEmailSent;
+    const passTotalAmount = (purchase.pass.price || 0) * purchase.quantity;
 
-    return await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       let paymentRecord = purchase.payment;
 
       if (isSuccess) {
@@ -360,7 +419,11 @@ export class PaymentSimulationService {
 
         await tx.passPurchase.update({
           where: { id: purchase.id },
-          data: { status: RegistrationStatus.CONFIRMED },
+          data: {
+            status: RegistrationStatus.CONFIRMED,
+            confirmationEmailSent: true,
+            confirmationEmailSentAt: new Date(),
+          },
         });
 
         return {
@@ -390,5 +453,38 @@ export class PaymentSimulationService {
         };
       }
     });
+
+    if (isSuccess && !wasPassEmailSent) {
+      try {
+        const fullPurchase = await prisma.passPurchase.findUnique({
+          where: { id: passId },
+          include: {
+            pass: true,
+            payment: true,
+            holders: { orderBy: { holderIndex: "asc" } },
+          },
+        });
+        if (fullPurchase) {
+          await emailService.sendPassConfirmation(passEmail, {
+            ...fullPurchase,
+            payment: {
+              amount: passTotalAmount,
+              status: "SUCCESS",
+              transactionId: simTxnId,
+              gatewayReference: simRef,
+              method: paymentMethod,
+              paidAt: new Date(),
+            },
+          } as any);
+        }
+      } catch (err: any) {
+        console.error(
+          "[PaymentSimulationService] Non-fatal error dispatching pass confirmation email:",
+          err?.message
+        );
+      }
+    }
+
+    return result;
   }
 }

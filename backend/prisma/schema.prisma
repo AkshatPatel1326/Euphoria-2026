@@ -92,7 +92,9 @@ model User {
   enrollmentNumber    String?
   collegeName         String?
   course              String?
+  institute           String?
   year                String?
+  semester            String?
   city                String?
 
   // Auth verification flags
@@ -105,6 +107,7 @@ model User {
   ledTeams        Team[]         @relation("TeamLeader")
   teamMemberships TeamMember[]
   passPurchases   PassPurchase[]
+  announcements   Announcement[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -175,6 +178,14 @@ model Event {
   // Competition info
   prizes String? // e.g. "1st: ₹3,100 | 2nd: ₹2,100"
   rules  String? @db.Text
+
+  // Coordinators
+  facultyCoordinator String?
+  studentCoordinator String?
+
+  // Event family & stage grouping
+  eventFamily String?
+  stage       String? // "audition" | "main"
 
   // Relations
   schedules     Schedule[]
@@ -295,12 +306,22 @@ model Registration {
   enrollmentNumber String?
   collegeName      String?
   course           String?
+  institute        String?
   year             String?
+  semester         String?
   city             String?
 
   // Email verification tracking
   isEmailVerified Boolean   @default(false)
   emailVerifiedAt DateTime?
+
+  // Confirmation email dispatch tracking
+  confirmationEmailSent   Boolean   @default(false)
+  confirmationEmailSentAt DateTime?
+
+  // Festival Pass Discount tracking
+  appliedPassId         String?   @unique
+  discountAmount        Float?    @default(0)
 
   // Payment transaction
   payment Payment?
@@ -386,13 +407,26 @@ model PassPurchase {
   phone               String
   participantCategory ParticipantCategory
   collegeName         String?
+  institute           String?
+  year                String?
+  semester            String?
   quantity            Int                 @default(1)
+
+  holders             PassHolder[]
 
   isEmailVerified Boolean            @default(false)
   emailVerifiedAt DateTime?
 
+  // Confirmation email dispatch tracking
+  confirmationEmailSent   Boolean   @default(false)
+  confirmationEmailSentAt DateTime?
+
   status  RegistrationStatus @default(PENDING)
   payment Payment?
+
+  // Festival Pass coupon usage tracking (e.g. Standup Comedy discount)
+  standupDiscountUsed   Boolean   @default(false)
+  standupRegistrationId String?   @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -401,6 +435,23 @@ model PassPurchase {
   @@index([passId])
   @@index([passNumber])
   @@index([status])
+  @@index([email])
+}
+
+model PassHolder {
+  id             String       @id @default(cuid())
+  passPurchaseId String
+  passPurchase   PassPurchase @relation(fields: [passPurchaseId], references: [id], onDelete: Cascade)
+
+  holderIndex    Int          @default(1)
+  fullName       String
+  email          String
+  phone          String
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([passPurchaseId])
   @@index([email])
 }
 
@@ -460,4 +511,30 @@ model Sponsor {
 
   @@index([isFeatured])
   @@index([order])
+}
+
+// ─────────────────────────────────────────────────────────────
+// FESTIVAL ANNOUNCEMENTS & DYNAMIC UPDATES
+// ─────────────────────────────────────────────────────────────
+
+model Announcement {
+  id          String    @id @default(cuid())
+  title       String
+  content     String    @db.Text
+  category    String?   @default("GENERAL") // e.g. "GENERAL", "URGENT", "SCHEDULE", "COMPETITION", "PRO NIGHT"
+  imageUrl    String?
+  linkUrl     String?
+  linkText    String?
+  isPinned    Boolean   @default(false)
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+  authorId    String?
+  author      User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([isPublished])
+  @@index([isPinned])
+  @@index([createdAt])
 }

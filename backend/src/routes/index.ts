@@ -10,6 +10,7 @@ import registrationRoutes from "./registrationRoutes";
 import verificationRoutes from "./verificationRoutes";
 import adminRoutes from "./adminRoutes";
 import paymentRoutes from "./paymentRoutes";
+import announcementRoutes from "./announcementRoutes";
 
 const router = Router();
 
@@ -44,6 +45,7 @@ router.use("/events", eventRoutes);
 router.use("/passes", passRoutes);
 router.use("/sponsors", sponsorRoutes);
 router.use("/schedules", scheduleRoutes);
+router.use("/announcements", announcementRoutes);
 
 /**
  * Registration & Payment simulation routes
@@ -68,6 +70,16 @@ router.use("/admin", adminRoutes);
  * /api/payments
  */
 router.use("/payments", paymentRoutes);
+
+/**
+ * Development-only testing routes (guarded by NODE_ENV !== "production")
+ * /api/dev
+ */
+if (process.env.NODE_ENV !== "production") {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const devRoutes = require("./devRoutes").default;
+  router.use("/dev", devRoutes);
+}
 
 export default router;
 

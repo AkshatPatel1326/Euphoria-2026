@@ -40,11 +40,11 @@ export function BlurFade({
   children,
   className,
   delay = 0,
-  duration = 0.5,
-  yOffset = 15,
-  blur = 6,
+  duration = 0.28,
+  yOffset = 10,
+  blur = 3,
   inView = true,
-  inViewMargin = "-50px",
+  inViewMargin = "-20px",
   once = true,
   ...motionProps
 }: BlurFadeProps) {

@@ -4,6 +4,8 @@ import {
   RegistrationStatus,
   PaymentStatus,
   type Prisma,
+  type Event,
+  type Pass,
 } from "../../generated/prisma/client";
 import { HttpError } from "../lib/errors";
 import type {
@@ -129,7 +131,7 @@ export class AdminService {
           where: { status: RegistrationStatus.REJECTED },
         }),
         prisma.passPurchase.findMany({
-          include: { pass: true, payment: true },
+          include: { pass: true, payment: true, holders: { orderBy: { holderIndex: "asc" } } },
           orderBy: { createdAt: "desc" },
           take: 6,
         }),
@@ -235,6 +237,7 @@ export class AdminService {
         { scholarNumber: { contains: s, mode: "insensitive" } },
         { enrollmentNumber: { contains: s, mode: "insensitive" } },
         { collegeName: { contains: s, mode: "insensitive" } },
+        { institute: { contains: s, mode: "insensitive" } },
         { team: { name: { contains: s, mode: "insensitive" } } },
         {
           team: {
@@ -410,6 +413,18 @@ export class AdminService {
         { phone: { contains: s, mode: "insensitive" } },
         { passNumber: { contains: s, mode: "insensitive" } },
         { collegeName: { contains: s, mode: "insensitive" } },
+        { institute: { contains: s, mode: "insensitive" } },
+        {
+          holders: {
+            some: {
+              OR: [
+                { fullName: { contains: s, mode: "insensitive" } },
+                { email: { contains: s, mode: "insensitive" } },
+                { phone: { contains: s, mode: "insensitive" } },
+              ],
+            },
+          },
+        },
       ];
     }
 
@@ -433,7 +448,7 @@ export class AdminService {
       prisma.passPurchase.count({ where }),
       prisma.passPurchase.findMany({
         where,
-        include: { pass: true, payment: true },
+        include: { pass: true, payment: true, holders: { orderBy: { holderIndex: "asc" } } },
         orderBy: { createdAt: "desc" },
         skip,
         take: limit,
@@ -462,7 +477,7 @@ export class AdminService {
 
     const items = await prisma.passPurchase.findMany({
       where,
-      include: { pass: true, payment: true },
+      include: { pass: true, payment: true, holders: { orderBy: { holderIndex: "asc" } } },
       orderBy: { createdAt: "desc" },
       take: 5000,
     });
@@ -483,7 +498,7 @@ export class AdminService {
 
     const purchase = await prisma.passPurchase.findUnique({
       where: { id },
-      include: { pass: true, payment: true },
+      include: { pass: true, payment: true, holders: { orderBy: { holderIndex: "asc" } } },
     });
 
     if (!purchase) {
@@ -582,5 +597,130 @@ export class AdminService {
       id: purchase.id,
       passNumber: purchase.passNumber,
     };
+  }
+
+  /**
+   * Update the fee for an event (Admin ONLY)
+   */
+  public static async updateEventPrice(
+    eventId: string,
+    fee: number,
+    currentUser: JwtUserPayload
+  ): Promise<Event> {
+    if (currentUser.role !== Role.ADMIN) {
+      throw new HttpError(
+        "Access denied. Only Administrators can update event prices.",
+        403
+      );
+    }
+
+    if (!eventId || typeof eventId !== "string" || eventId.trim() === "") {
+      throw new HttpError("Event ID is required.", 400);
+    }
+
+    if (
+      fee === undefined ||
+      fee === null ||
+      typeof fee !== "number" ||
+      isNaN(fee) ||
+      !isFinite(fee) ||
+      fee < 0
+    ) {
+      throw new HttpError(
+        "Invalid fee amount. Price must be a valid non-negative number.",
+        400
+      );
+    }
+
+    if (fee > 100000) {
+      throw new HttpError(
+        "Fee exceeds maximum permissible amount (₹1,00,000).",
+        400
+      );
+    }
+
+    const trimmedId = eventId.trim();
+    const event = await prisma.event.findFirst({
+      where: {
+        OR: [{ id: trimmedId }, { slug: trimmedId }],
+      },
+    });
+
+    if (!event) {
+      throw new HttpError("Event not found.", 404);
+    }
+
+    const sanitizedFee = Math.round(fee * 100) / 100;
+
+    const updatedEvent = await prisma.event.update({
+      where: { id: event.id },
+      data: { fee: sanitizedFee },
+      include: {
+        category: true,
+      },
+    });
+
+    return updatedEvent;
+  }
+
+  /**
+   * Update the price for a festival pass (Admin ONLY)
+   */
+  public static async updatePassPrice(
+    passId: string,
+    price: number | null,
+    currentUser: JwtUserPayload
+  ): Promise<Pass> {
+    if (currentUser.role !== Role.ADMIN) {
+      throw new HttpError(
+        "Access denied. Only Administrators can update festival pass prices.",
+        403
+      );
+    }
+
+    if (!passId || typeof passId !== "string" || passId.trim() === "") {
+      throw new HttpError("Pass ID is required.", 400);
+    }
+
+    if (price !== null) {
+      if (
+        typeof price !== "number" ||
+        isNaN(price) ||
+        !isFinite(price) ||
+        price < 0
+      ) {
+        throw new HttpError(
+          "Invalid pass price. Price must be a valid non-negative number or null.",
+          400
+        );
+      }
+
+      if (price > 100000) {
+        throw new HttpError(
+          "Pass price exceeds maximum permissible amount (₹1,00,000).",
+          400
+        );
+      }
+    }
+
+    const trimmedId = passId.trim();
+    const pass = await prisma.pass.findFirst({
+      where: {
+        OR: [{ id: trimmedId }, { slug: trimmedId }],
+      },
+    });
+
+    if (!pass) {
+      throw new HttpError("Festival pass not found.", 404);
+    }
+
+    const sanitizedPrice = price !== null ? Math.round(price * 100) / 100 : null;
+
+    const updatedPass = await prisma.pass.update({
+      where: { id: pass.id },
+      data: { price: sanitizedPrice },
+    });
+
+    return updatedPass;
   }
 }

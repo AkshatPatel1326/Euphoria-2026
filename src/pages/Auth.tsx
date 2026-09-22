@@ -157,7 +157,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Signing in...
+                      Processing...
                     </>
                   ) : (
                     <>
@@ -231,7 +231,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating account...
+                      Processing...
                     </>
                   ) : (
                     <>

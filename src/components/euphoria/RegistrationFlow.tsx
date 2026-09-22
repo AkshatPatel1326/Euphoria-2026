@@ -20,9 +20,17 @@ import {
   RotateCcw,
   Loader2,
   LogIn,
+  Users,
+  ChevronDown,
 } from "lucide-react";
 import type { EuphoriaEvent, ParticipantCategory, PaymentStatus } from "@/data/events";
 import { apiPost } from "@/lib/api";
+import { EuphoriaOtpInput } from "./EuphoriaOtpInput";
+import {
+  SAGE_INSTITUTES,
+  SAGE_YEARS,
+  getSemesterFromYear,
+} from "@/data/academic";
 
 /* ── Helpers ── */
 function isTeamEvent(event: EuphoriaEvent): boolean {
@@ -44,9 +52,9 @@ const stepLabels: Record<Step, string> = {
 };
 
 const participantTypes: { key: ParticipantCategory; label: string; sub: string; icon: typeof User }[] = [
-  { key: "sage", label: "SAGE University Student", sub: "Currently enrolled at SAGE University Indore", icon: GraduationCap },
-  { key: "other-college", label: "Other College Student", sub: "Student at a different institution", icon: BookOpen },
-  { key: "general", label: "General Participant", sub: "Independent / open registration", icon: User },
+  { key: "sage", label: "SAGE Student", sub: "Currently enrolled at SAGE University Indore", icon: GraduationCap },
+  { key: "other-college", label: "Other College/School Student", sub: "Student at another college or school", icon: BookOpen },
+  { key: "general", label: "General", sub: "Open / independent participant", icon: User },
 ];
 
 const categoryLabel: Record<string, string> = {
@@ -54,6 +62,7 @@ const categoryLabel: Record<string, string> = {
   "literary-management": "Literary & Management",
   "science-tech": "Science & Technology",
   sports: "Sports",
+  test: "Sandbox QA Test",
 };
 
 /* ── Animated container for step transitions ── */
@@ -113,6 +122,55 @@ function Input({
   );
 }
 
+function Select({
+  label,
+  icon: Icon,
+  value,
+  onChange,
+  options,
+  placeholder,
+  error,
+}: {
+  label: string;
+  icon: typeof User;
+  value: string;
+  onChange: (v: string) => void;
+  options: readonly string[] | string[];
+  placeholder?: string;
+  error?: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-[10px] font-semibold tracking-[0.2em] uppercase text-white/45">
+        {label}
+      </label>
+      <div className="relative">
+        <Icon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/20 pointer-events-none" />
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={`w-full appearance-none bg-neutral-900/90 border ${
+            error ? "border-red-400/50" : "border-white/[0.08]"
+          } rounded-lg pl-10 pr-10 py-2.5 text-sm ${
+            value ? "text-white/90" : "text-white/25"
+          } focus:outline-none focus:border-euphoria-aqua/40 transition-colors cursor-pointer`}
+        >
+          <option value="" disabled className="bg-neutral-900 text-white/30">
+            {placeholder || `Select ${label}`}
+          </option>
+          {options.map((opt) => (
+            <option key={opt} value={opt} className="bg-neutral-900 text-white/90 py-1">
+              {opt}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-white/30 pointer-events-none" />
+      </div>
+      {error && <p className="text-[10px] text-red-400/80">{error}</p>}
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════
    MAIN REGISTRATION FLOW
    ═══════════════════════════════════════════ */
@@ -131,8 +189,10 @@ export function RegistrationFlow({
     phone: string;
     scholarNumber?: string;
     enrollmentNumber?: string;
+    institute?: string;
     course?: string;
     year?: string;
+    semester?: string;
     collegeName?: string;
     city?: string;
   }>({
@@ -141,7 +201,6 @@ export function RegistrationFlow({
     phone: "",
   });
   const [teamName, setTeamName] = useState("");
-  const [teamMembers, setTeamMembers] = useState<{ fullName: string; email: string; phone: string }[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | null>(null);
@@ -163,9 +222,80 @@ export function RegistrationFlow({
   const [apiError, setApiError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  /* Use centralized event.fee — no string parsing */
-  const amount = event.fee;
+  /* Check if event is Standup Comedy */
+  const isStandupComedy =
+    event.id === "cultural-12" ||
+    event.name.toLowerCase().includes("standup comedy") ||
+    event.name.toLowerCase().includes("pankaj");
+
+  // Festival Pass coupon state for Standup Comedy discount
+  const [festivalPassInput, setFestivalPassInput] = useState("");
+  const [appliedPassId, setAppliedPassId] = useState<string | null>(null);
+  const [passDiscount, setPassDiscount] = useState<number>(0);
+  const [isValidatingPass, setIsValidatingPass] = useState(false);
+  const [passCouponError, setPassCouponError] = useState<string | null>(null);
+  const [passCouponSuccess, setPassCouponSuccess] = useState<string | null>(null);
+
+  /* Use centralized event.fee — no string parsing; ₹49 if Festival Pass applied for Standup Comedy */
+  const amount = isStandupComedy && appliedPassId ? 49 : event.fee;
   const team = isTeamEvent(event);
+
+  const handleApplyFestivalPass = useCallback(async () => {
+    const code = festivalPassInput.trim().toUpperCase();
+    if (!code) {
+      setPassCouponError("Please enter your Festival Pass ID.");
+      return;
+    }
+    setIsValidatingPass(true);
+    setPassCouponError(null);
+    setPassCouponSuccess(null);
+    try {
+      const res = await apiPost<{
+        status: string;
+        valid?: boolean;
+        message?: string;
+        data?: {
+          valid: boolean;
+          discountedPrice: number;
+          discountAmount: number;
+          originalPrice: number;
+          passId: string;
+          message?: string;
+        };
+      }>("/passes/validate-coupon", {
+        passId: code,
+        eventId: event.id,
+      });
+
+      const couponData = res.data?.valid !== undefined ? res.data : (res as any);
+      if (couponData.valid) {
+        setAppliedPassId(couponData.passId || code);
+        setPassDiscount(couponData.discountAmount || 150);
+        setPassCouponSuccess("Festival Pass verified");
+        setPassCouponError(null);
+      } else {
+        setAppliedPassId(null);
+        setPassDiscount(0);
+        setPassCouponError(couponData.message || res.message || "Invalid or inactive Festival Pass.");
+        setPassCouponSuccess(null);
+      }
+    } catch (err: any) {
+      setAppliedPassId(null);
+      setPassDiscount(0);
+      setPassCouponError(err.message || "Invalid or inactive Festival Pass.");
+      setPassCouponSuccess(null);
+    } finally {
+      setIsValidatingPass(false);
+    }
+  }, [festivalPassInput, event.id]);
+
+  const handleRemoveFestivalPass = useCallback(() => {
+    setAppliedPassId(null);
+    setPassDiscount(0);
+    setFestivalPassInput("");
+    setPassCouponError(null);
+    setPassCouponSuccess(null);
+  }, []);
 
   // Resend countdown timer
   useEffect(() => {
@@ -249,18 +379,6 @@ export function RegistrationFlow({
     });
   }, []);
 
-  const addTeamMember = useCallback(() => {
-    setTeamMembers((prev) => [...prev, { fullName: "", email: "", phone: "" }]);
-  }, []);
-
-  const removeTeamMember = useCallback((idx: number) => {
-    setTeamMembers((prev) => prev.filter((_, i) => i !== idx));
-  }, []);
-
-  const updateTeamMember = useCallback((idx: number, key: string, value: string) => {
-    setTeamMembers((prev) => prev.map((m, i) => (i === idx ? { ...m, [key]: value } : m)));
-  }, []);
-
   /* ── Validation ── */
   const validate = useCallback((): boolean => {
     const errs: Record<string, string> = {};
@@ -279,31 +397,17 @@ export function RegistrationFlow({
       if (participantType === "sage") {
         if (!details.scholarNumber?.trim()) errs.scholarNumber = "Scholar number is required";
         if (!details.enrollmentNumber?.trim()) errs.enrollmentNumber = "Enrollment number is required";
-        if (!details.course?.trim()) errs.course = "Course is required";
-        if (!details.year?.trim()) errs.year = "Year/Semester is required";
+        if (!details.institute?.trim()) errs.institute = "Please select your institute.";
+        if (!details.year?.trim()) errs.year = "Please select your year.";
       }
       if (participantType === "other-college") {
-        if (!details.collegeName?.trim()) errs.collegeName = "College name is required";
-        if (!details.course?.trim()) errs.course = "Course is required";
-        if (!details.year?.trim()) errs.year = "Year is required";
+        if (!details.collegeName?.trim()) errs.collegeName = "College / School name is required";
       }
-      if (participantType === "general") {
-        if (!details.city?.trim()) errs.city = "City is required";
-      }
+      // General requires only normal participant details (Full Name, Email, Phone) which are validated above
 
-      /* Team validation */
+      /* Team validation: require team name for team events, no member details required */
       if (team) {
         if (!teamName.trim()) errs.teamName = "Team name is required";
-        if (event.minTeamSize > 0 && teamMembers.length < event.minTeamSize - 1) {
-          errs.teamMembers = `At least ${event.minTeamSize - 1} team member(s) required (including you as team leader)`;
-        }
-        for (let i = 0; i < teamMembers.length; i++) {
-          const m = teamMembers[i];
-          if (!m.fullName.trim()) errs[`member_${i}_name`] = "Name required";
-          if (!m.email.trim()) errs[`member_${i}_email`] = "Email required";
-          if (!m.phone.trim()) errs[`member_${i}_phone`] = "Phone required";
-          else if (!/^\d{10}$/.test(m.phone.replace(/\D/g, ""))) errs[`member_${i}_phone`] = "Invalid 10-digit number";
-        }
       }
     }
 
@@ -313,7 +417,7 @@ export function RegistrationFlow({
 
     setErrors(errs);
     return Object.keys(errs).length === 0;
-  }, [step, participantType, details, team, teamName, teamMembers, event, paymentMethod]);
+  }, [step, participantType, details, team, teamName, paymentMethod]);
 
   const next = useCallback(async () => {
     if (!validate()) return;
@@ -347,6 +451,10 @@ export function RegistrationFlow({
 
         // If registration wasn't created yet, create it
         if (!currentRegId) {
+          const derivedSemester = participantType === "sage" && details.year
+            ? getSemesterFromYear(details.year)
+            : undefined;
+
           const regBody: Record<string, unknown> = {
             eventId: event.id,
             participantCategory: participantType,
@@ -356,18 +464,20 @@ export function RegistrationFlow({
               phone: details.phone,
             },
             verificationToken,
-            scholarNumber: details.scholarNumber || undefined,
-            enrollmentNumber: details.enrollmentNumber || undefined,
-            collegeName: details.collegeName || undefined,
-            course: details.course || undefined,
+            scholarNumber: participantType === "sage" ? details.scholarNumber || undefined : undefined,
+            enrollmentNumber: participantType === "sage" ? details.enrollmentNumber || undefined : undefined,
+            institute: participantType === "sage" ? details.institute || undefined : undefined,
+            collegeName: participantType === "other-college" ? details.collegeName || undefined : undefined,
+            course: participantType === "other-college" ? details.course || undefined : undefined,
             year: details.year || undefined,
-            city: details.city || undefined,
+            semester: derivedSemester,
+            city: participantType === "general" ? details.city || undefined : undefined,
             paymentMethod: paymentMethod || undefined,
+            festivalPassId: appliedPassId || undefined,
           };
 
           if (team) {
-            regBody.teamName = teamName;
-            regBody.teamMembers = teamMembers;
+            regBody.teamName = teamName.trim();
           }
 
           const regRes = await apiPost<{
@@ -422,7 +532,11 @@ export function RegistrationFlow({
           return;
         }
 
-        if (payRes.data.mode === "SIMULATION" && payRes.data.registrationStatus === "CONFIRMED") {
+        const regStatus =
+          payRes.data.registrationStatus ||
+          (payRes.data as any).simulationResult?.registrationStatus;
+
+        if (payRes.data.mode === "SIMULATION" && regStatus === "CONFIRMED") {
           setPaymentStatus("success");
           setStep("success");
         } else {
@@ -456,8 +570,8 @@ export function RegistrationFlow({
     paymentMethod,
     team,
     teamName,
-    teamMembers,
     amount,
+    appliedPassId,
     verificationToken,
     verifiedEmail,
     registrationId,
@@ -605,10 +719,6 @@ export function RegistrationFlow({
                 event={event}
                 teamName={teamName}
                 setTeamName={setTeamName}
-                teamMembers={teamMembers}
-                addTeamMember={addTeamMember}
-                removeTeamMember={removeTeamMember}
-                updateTeamMember={updateTeamMember}
               />
             )}
             {step === "verify" && (
@@ -631,9 +741,18 @@ export function RegistrationFlow({
                 amount={amount}
                 participantType={participantType!}
                 details={details}
-                teamMembers={teamMembers}
                 teamName={teamName}
                 team={team}
+                isStandupComedy={isStandupComedy}
+                festivalPassInput={festivalPassInput}
+                setFestivalPassInput={setFestivalPassInput}
+                appliedPassId={appliedPassId}
+                passDiscount={passDiscount}
+                isValidatingPass={isValidatingPass}
+                passCouponError={passCouponError}
+                passCouponSuccess={passCouponSuccess}
+                onApplyPass={handleApplyFestivalPass}
+                onRemovePass={handleRemoveFestivalPass}
               />
             )}
             {step === "payment" && (
@@ -653,6 +772,8 @@ export function RegistrationFlow({
                 amount={amount}
                 details={details}
                 participantType={participantType!}
+                team={team}
+                teamName={teamName}
                 onClose={onClose}
               />
             )}
@@ -691,28 +812,60 @@ export function RegistrationFlow({
               <button
                 onClick={next}
                 disabled={isSubmitting}
-                className="flex items-center gap-2 px-6 py-2.5 text-xs font-semibold tracking-[0.15em] uppercase bg-gradient-to-r from-euphoria-aqua/80 to-euphoria-teal/80 text-white rounded-lg hover:from-euphoria-aqua hover:to-euphoria-teal transition-all duration-300 shadow-lg shadow-euphoria-aqua/10 disabled:opacity-40"
+                className="flex items-center gap-2 px-6 py-2.5 text-xs font-bold tracking-[0.15em] uppercase bg-gradient-to-r from-euphoria-aqua via-cyan-300 to-euphoria-aqua text-neutral-950 rounded-lg hover:brightness-105 transition-all duration-300 shadow-lg shadow-euphoria-aqua/20 disabled:bg-white/[0.08] disabled:text-white/40 disabled:border disabled:border-white/[0.08] disabled:shadow-none disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-euphoria-aqua focus-visible:outline-none active:scale-[0.98]"
               >
-                {isSubmitting ? "Processing..." : `Pay ₹${amount.toLocaleString("en-IN")}`}
-                <CreditCard className="size-3.5" />
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="size-3.5 animate-spin text-neutral-950" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    Pay ₹{amount.toLocaleString("en-IN")}
+                    <CreditCard className="size-3.5 text-neutral-950" />
+                  </>
+                )}
               </button>
             ) : step === "verify" ? (
               <button
                 onClick={verifyOtp}
                 disabled={isVerifyingOtp || otpCode.trim().length !== 6}
-                className="flex items-center gap-2 px-6 py-2.5 text-xs font-semibold tracking-[0.15em] uppercase bg-gradient-to-r from-euphoria-aqua/80 to-euphoria-teal/80 text-white rounded-lg hover:from-euphoria-aqua hover:to-euphoria-teal disabled:opacity-40 transition-all duration-300 shadow-lg shadow-euphoria-aqua/10"
+                className="flex items-center gap-2 px-6 py-2.5 text-xs font-bold tracking-[0.15em] uppercase bg-gradient-to-r from-euphoria-aqua via-cyan-300 to-euphoria-aqua text-neutral-950 rounded-lg hover:brightness-105 disabled:bg-white/[0.08] disabled:text-white/40 disabled:border disabled:border-white/[0.08] disabled:shadow-none disabled:cursor-not-allowed transition-all duration-300 shadow-lg shadow-euphoria-aqua/20 focus-visible:ring-2 focus-visible:ring-euphoria-aqua focus-visible:outline-none active:scale-[0.98]"
               >
-                {isVerifyingOtp ? "Verifying..." : "Verify & Continue"}
-                <ChevronRight className="size-3.5" />
+                {isVerifyingOtp ? (
+                  <>
+                    <Loader2 className="size-3.5 animate-spin text-neutral-950" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    Verify & Continue
+                    <ChevronRight className="size-3.5 text-neutral-950" />
+                  </>
+                )}
               </button>
             ) : (
               <button
                 onClick={next}
                 disabled={isSubmitting || isSendingOtp}
-                className="flex items-center gap-2 px-6 py-2.5 text-xs font-semibold tracking-[0.15em] uppercase bg-white/[0.06] text-white/70 rounded-lg hover:bg-white/[0.1] hover:text-white transition-all duration-300 border border-white/[0.08] disabled:opacity-40"
+                className="flex items-center gap-2 px-6 py-2.5 text-xs font-bold tracking-[0.15em] uppercase bg-gradient-to-r from-euphoria-aqua via-cyan-300 to-euphoria-aqua text-neutral-950 rounded-lg hover:brightness-105 transition-all duration-300 shadow-lg shadow-euphoria-aqua/20 disabled:bg-white/[0.08] disabled:text-white/40 disabled:border disabled:border-white/[0.08] disabled:shadow-none disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-euphoria-aqua focus-visible:outline-none active:scale-[0.98]"
               >
-                {isSendingOtp ? "Sending code..." : step === "review" ? (amount === 0 ? "Confirm Registration" : "Proceed to Payment") : "Continue"}
-                <ChevronRight className="size-3.5" />
+                {isSendingOtp ? (
+                  <>
+                    <Loader2 className="size-3.5 animate-spin text-neutral-950" />
+                    Processing...
+                  </>
+                ) : step === "review" && isSubmitting ? (
+                  <>
+                    <Loader2 className="size-3.5 animate-spin text-neutral-950" />
+                    Submitting...
+                  </>
+                ) : step === "review" ? (
+                  amount === 0 ? "Confirm Registration" : "Proceed to Payment"
+                ) : (
+                  "Continue"
+                )}
+                {!isSendingOtp && !(step === "review" && isSubmitting) && <ChevronRight className="size-3.5 text-neutral-950" />}
               </button>
             )}
           </div>
@@ -726,9 +879,9 @@ export function RegistrationFlow({
                 setPaymentStatus(null);
                 setStep("payment");
               }}
-              className="flex items-center gap-2 px-6 py-2.5 text-xs font-semibold tracking-[0.15em] uppercase bg-gradient-to-r from-euphoria-aqua/80 to-euphoria-teal/80 text-white rounded-lg hover:from-euphoria-aqua hover:to-euphoria-teal transition-all duration-300"
+              className="flex items-center gap-2 px-6 py-2.5 text-xs font-bold tracking-[0.15em] uppercase bg-gradient-to-r from-euphoria-aqua via-cyan-300 to-euphoria-aqua text-neutral-950 rounded-lg hover:brightness-105 transition-all duration-300 shadow-lg shadow-euphoria-aqua/20 focus-visible:ring-2 focus-visible:ring-euphoria-aqua focus-visible:outline-none active:scale-[0.98]"
             >
-              <RotateCcw className="size-3.5" />
+              <RotateCcw className="size-3.5 text-neutral-950" />
               Try Again
             </button>
             <button
@@ -815,12 +968,17 @@ function SummaryStep({
             Team Event
           </p>
           <p className="text-xs text-white/55 leading-relaxed">
-            You are registering as the <span className="text-white/80 font-semibold">Team Leader</span>.
-            As Team Leader, you will enter all team member details during registration and make the
-            full payment on behalf of the team. Team members cannot be added after registration is submitted.
+            You are registering as the <span className="text-white/80 font-semibold">Team Leader / Captain</span>.
+            As Team Leader, you will provide the team name and complete the registration and payment on behalf of your team.
           </p>
           <div className="text-[10px] text-white/35 space-x-2">
-            <span>Team size: {event.minTeamSize}–{event.maxTeamSize}</span>
+            <span>
+              Configured team size:{" "}
+              {event.teamSize ||
+                (event.minTeamSize === event.maxTeamSize
+                  ? `${event.maxTeamSize} members`
+                  : `${event.minTeamSize}–${event.maxTeamSize} members`)}
+            </span>
           </div>
         </div>
       )}
@@ -909,10 +1067,6 @@ function DetailsStep({
   event,
   teamName,
   setTeamName,
-  teamMembers,
-  addTeamMember,
-  removeTeamMember,
-  updateTeamMember,
 }: {
   participantType: ParticipantCategory;
   details: {
@@ -921,8 +1075,10 @@ function DetailsStep({
     phone: string;
     scholarNumber?: string;
     enrollmentNumber?: string;
+    institute?: string;
     course?: string;
     year?: string;
+    semester?: string;
     collegeName?: string;
     city?: string;
   };
@@ -932,35 +1088,60 @@ function DetailsStep({
   event: EuphoriaEvent;
   teamName: string;
   setTeamName: (v: string) => void;
-  teamMembers: { fullName: string; email: string; phone: string }[];
-  addTeamMember: () => void;
-  removeTeamMember: (idx: number) => void;
-  updateTeamMember: (idx: number, key: string, value: string) => void;
 }) {
+  const derivedSemester = details.year ? getSemesterFromYear(details.year) : "";
+
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
         <p className="text-[10px] font-semibold tracking-[0.3em] uppercase text-euphoria-gold/60">
           {participantType === "sage"
-            ? "SAGE University Student"
+            ? "SAGE Student"
             : participantType === "other-college"
-            ? "Other College Student"
-            : "General Participant"}
+            ? "Other College/School Student"
+            : "General"}
         </p>
-        <h2 className="text-lg sm:text-xl font-bold text-white">Your Details</h2>
+        <h2 className="text-lg sm:text-xl font-bold text-white">
+          {team ? "Team Leader / Captain Details" : "Your Details"}
+        </h2>
+        {team && (
+          <p className="text-xs text-white/50">
+            Primary participant responsible for this team registration
+          </p>
+        )}
       </div>
+
+      {/* Team Leader notice for team events */}
+      {team && (
+        <div className="glass-card rounded-xl p-4 bg-euphoria-purple/[0.04] border border-euphoria-purple/10">
+          <div className="flex items-start gap-3">
+            <Users className="size-4 text-euphoria-purple/70 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-xs font-semibold text-white/75">Team Leader Registration</p>
+              <p className="text-[10px] text-white/45 mt-1 leading-relaxed">
+                You are registering as the Team Leader / Captain on behalf of your team (
+                {event.teamSize ||
+                  (event.minTeamSize === event.maxTeamSize
+                    ? `${event.maxTeamSize} members`
+                    : `${event.minTeamSize}–${event.maxTeamSize} members`)}
+                ). The team leader provides their details, team name, and completes payment for the team.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-4">
         <Input
-          label="Full Name"
+          label={team ? "Team Leader Full Name" : "Full Name"}
           icon={User}
           value={details.fullName}
           onChange={(v) => updateDetail("fullName", v)}
-          placeholder="Enter your full name"
+          placeholder={team ? "Enter team leader's full name" : "Enter your full name"}
           error={errors.fullName}
         />
         <Input
-          label="Email Address"
+          label={team ? "Team Leader Email Address" : "Email Address"}
           icon={Mail}
           value={details.email}
           onChange={(v) => updateDetail("email", v)}
@@ -969,7 +1150,7 @@ function DetailsStep({
           error={errors.email}
         />
         <Input
-          label="Phone Number"
+          label={team ? "Team Leader Phone Number" : "Phone Number"}
           icon={Phone}
           value={details.phone}
           onChange={(v) => updateDetail("phone", v)}
@@ -997,64 +1178,54 @@ function DetailsStep({
               placeholder="Your enrollment number"
               error={errors.enrollmentNumber}
             />
-            <Input
-              label="Course / Department"
-              icon={BookOpen}
-              value={details.course || ""}
-              onChange={(v) => updateDetail("course", v)}
-              placeholder="e.g. B.Tech CSE"
-              error={errors.course}
-            />
-            <Input
-              label="Year / Semester"
-              icon={Calendar}
-              value={details.year || ""}
-              onChange={(v) => updateDetail("year", v)}
-              placeholder="e.g. 3rd Year"
-              error={errors.year}
-            />
-          </>
-        )}
-
-        {/* ── Other College Student fields ── */}
-        {participantType === "other-college" && (
-          <>
-            <Input
-              label="College Name"
+            <Select
+              label="Institute"
               icon={Building2}
-              value={details.collegeName || ""}
-              onChange={(v) => updateDetail("collegeName", v)}
-              placeholder="Your college name"
-              error={errors.collegeName}
+              value={details.institute || ""}
+              onChange={(v) => updateDetail("institute", v)}
+              options={SAGE_INSTITUTES}
+              placeholder="Select your institute"
+              error={errors.institute}
             />
-            <Input
-              label="Course"
-              icon={BookOpen}
-              value={details.course || ""}
-              onChange={(v) => updateDetail("course", v)}
-              placeholder="e.g. BBA"
-              error={errors.course}
-            />
-            <Input
-              label="Year"
-              icon={Calendar}
-              value={details.year || ""}
-              onChange={(v) => updateDetail("year", v)}
-              placeholder="e.g. 2nd Year"
-              error={errors.year}
-            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Select
+                label="Year"
+                icon={Calendar}
+                value={details.year || ""}
+                onChange={(v) => updateDetail("year", v)}
+                options={SAGE_YEARS}
+                placeholder="Select your year"
+                error={errors.year}
+              />
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-semibold tracking-[0.2em] uppercase text-white/45">
+                  Semester
+                </label>
+                <div className="relative">
+                  <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/20 pointer-events-none" />
+                  <input
+                    type="text"
+                    readOnly
+                    value={derivedSemester || "Auto-derived from Year"}
+                    className={`w-full bg-white/[0.02] border border-white/[0.06] rounded-lg pl-10 pr-4 py-2.5 text-sm ${
+                      derivedSemester ? "text-euphoria-aqua font-medium" : "text-white/20 italic"
+                    } cursor-not-allowed select-none focus:outline-none`}
+                  />
+                </div>
+              </div>
+            </div>
           </>
         )}
 
-        {/* ── General Participant fields ── */}
-        {participantType === "general" && (
+        {/* ── Other College/School Student fields ── */}
+        {participantType === "other-college" && (
           <Input
-            label="City"
-            icon={MapPin}
-            value={details.city || ""}
-            onChange={(v) => updateDetail("city", v)}
-            placeholder="Your city"
-            error={errors.city}
+            label="College / School Name"
+            icon={Building2}
+            value={details.collegeName || ""}
+            onChange={(v) => updateDetail("collegeName", v)}
+            placeholder="Your college or school name"
+            error={errors.collegeName}
           />
         )}
       </div>
@@ -1064,93 +1235,19 @@ function DetailsStep({
         <div className="space-y-4 pt-2">
           <div className="h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
 
-          {/* Team Leader notice */}
-          <div className="glass-card rounded-xl p-4 bg-euphoria-purple/[0.04] border border-euphoria-purple/10">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="size-4 text-euphoria-purple/70 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-xs font-semibold text-white/75">Team Leader Registration</p>
-                <p className="text-[10px] text-white/45 mt-1 leading-relaxed">
-                  As the Team Leader, you are registering the entire team. Enter all team member details below.
-                  Team members cannot be added or modified after registration is submitted.
-                </p>
-                <p className="text-[10px] text-white/45 mt-1">
-                  The team leader completes the full payment on behalf of the team.
-                </p>
-              </div>
-            </div>
+          <div className="space-y-3">
+            <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-white/40">
+              Team Information
+            </p>
+            <Input
+              label="Team Name"
+              icon={Users}
+              value={teamName}
+              onChange={(v) => setTeamName(v)}
+              placeholder="Enter your team name"
+              error={errors.teamName}
+            />
           </div>
-
-          <Input
-            label="Team Name"
-            icon={User}
-            value={teamName}
-            onChange={(v) => setTeamName(v)}
-            placeholder="Enter your team name"
-            error={errors.teamName}
-          />
-
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-white/65">Team Members</p>
-              <p className="text-[10px] text-white/40 mt-0.5">
-                {event.minTeamSize > 1 ? `${event.minTeamSize}–${event.maxTeamSize} members total` : "Add your team member details"}
-              </p>
-            </div>
-            <button
-              onClick={addTeamMember}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-semibold tracking-wider uppercase text-euphoria-aqua/60 border border-euphoria-aqua/15 rounded-md hover:bg-euphoria-aqua/10 hover:border-euphoria-aqua/30 transition-all"
-            >
-              + Add
-            </button>
-          </div>
-
-          {teamMembers.map((member, idx) => (
-            <div key={idx} className="glass-card rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-white/40">
-                  Member {idx + 1}
-                </p>
-                <button
-                  onClick={() => removeTeamMember(idx)}
-                  className="text-[10px] text-red-400/60 hover:text-red-400 transition-colors"
-                >
-                  Remove
-                </button>
-              </div>
-              <input
-                value={member.fullName}
-                onChange={(e) => updateTeamMember(idx, "fullName", e.target.value)}
-                placeholder="Full name"
-                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white/80 placeholder-white/15 focus:outline-none focus:border-euphoria-aqua/40 transition-colors"
-              />
-              {errors[`member_${idx}_name`] && (
-                <p className="text-[10px] text-red-400/80">{errors[`member_${idx}_name`]}</p>
-              )}
-              <input
-                value={member.email}
-                onChange={(e) => updateTeamMember(idx, "email", e.target.value)}
-                placeholder="Email"
-                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white/80 placeholder-white/15 focus:outline-none focus:border-euphoria-aqua/40 transition-colors"
-              />
-              {errors[`member_${idx}_email`] && (
-                <p className="text-[10px] text-red-400/80">{errors[`member_${idx}_email`]}</p>
-              )}
-              <input
-                value={member.phone}
-                onChange={(e) => updateTeamMember(idx, "phone", e.target.value)}
-                placeholder="Phone"
-                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white/80 placeholder-white/15 focus:outline-none focus:border-euphoria-aqua/40 transition-colors"
-              />
-              {errors[`member_${idx}_phone`] && (
-                <p className="text-[10px] text-red-400/80">{errors[`member_${idx}_phone`]}</p>
-              )}
-            </div>
-          ))}
-
-          {errors.teamMembers && (
-            <p className="text-[10px] text-red-400/80 text-center">{errors.teamMembers}</p>
-          )}
         </div>
       )}
     </div>
@@ -1219,49 +1316,48 @@ function VerifyStep({
 
       <div className="space-y-4">
         <div>
-          <label className="text-[10px] font-semibold tracking-[0.2em] uppercase text-white/45 block mb-2 text-center">
+          <label className="text-[10px] font-semibold tracking-[0.2em] uppercase text-white/45 block mb-3 text-center">
             Enter 6-Digit Code
           </label>
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={6}
+          <EuphoriaOtpInput
             value={otpCode}
-            onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
-            placeholder="······"
-            className="w-full text-center text-2xl sm:text-3xl font-mono tracking-[0.35em] py-3 px-4 bg-white/[0.04] border border-white/[0.1] rounded-xl text-white focus:outline-none focus:border-euphoria-aqua/50 focus:ring-1 focus:ring-euphoria-aqua/30 transition-all"
+            onChange={setOtpCode}
             autoFocus
+            disabled={isVerifying}
+            hasError={Boolean(error)}
+            accentColor="aqua"
+            onComplete={onVerify}
           />
         </div>
 
         <button
           onClick={onVerify}
           disabled={isVerifying || otpCode.trim().length !== 6}
-          className="w-full py-3 rounded-xl font-semibold text-xs tracking-[0.15em] uppercase bg-gradient-to-r from-euphoria-aqua/90 to-euphoria-teal/90 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:from-euphoria-aqua hover:to-euphoria-teal transition-all shadow-lg shadow-euphoria-aqua/10 flex items-center justify-center gap-2"
+          className="w-full py-3 rounded-xl font-bold text-xs tracking-[0.15em] uppercase bg-gradient-to-r from-euphoria-aqua via-cyan-300 to-euphoria-aqua text-neutral-950 hover:brightness-105 active:scale-[0.98] transition-all shadow-lg shadow-euphoria-aqua/20 flex items-center justify-center gap-2 disabled:bg-white/[0.08] disabled:text-white/40 disabled:border disabled:border-white/[0.08] disabled:shadow-none disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-euphoria-aqua focus-visible:outline-none"
         >
           {isVerifying ? (
             <>
-              <Loader2 className="size-4 animate-spin" />
-              Verifying...
+              <Loader2 className="size-4 animate-spin text-neutral-950" />
+              Processing...
             </>
           ) : (
             <>
               Verify & Continue
-              <Check className="size-4" />
+              <Check className="size-4 text-neutral-950" />
             </>
           )}
         </button>
 
         <div className="text-center pt-2">
           {countdown > 0 ? (
-            <p className="text-xs text-white/40">
-              Resend code in <span className="text-white/70 font-mono font-semibold">{countdown}s</span>
+            <p className="text-xs text-white/50">
+              Resend code in <span className="text-white/80 font-mono font-semibold">{countdown}s</span>
             </p>
           ) : (
             <button
               onClick={onResend}
               disabled={isSending}
-              className="text-xs text-euphoria-aqua hover:underline font-medium disabled:opacity-40 transition-colors"
+              className="text-xs text-euphoria-aqua hover:underline font-semibold disabled:opacity-40 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-euphoria-aqua/40 rounded px-1"
             >
               {isSending ? "Sending code..." : "Didn't receive code? Resend Code"}
             </button>
@@ -1278,9 +1374,18 @@ function ReviewStep({
   amount,
   participantType,
   details,
-  teamMembers,
   teamName,
   team,
+  isStandupComedy,
+  festivalPassInput,
+  setFestivalPassInput,
+  appliedPassId,
+  passDiscount,
+  isValidatingPass,
+  passCouponError,
+  passCouponSuccess,
+  onApplyPass,
+  onRemovePass,
 }: {
   event: EuphoriaEvent;
   amount: number;
@@ -1291,27 +1396,38 @@ function ReviewStep({
     phone: string;
     scholarNumber?: string;
     enrollmentNumber?: string;
+    institute?: string;
     course?: string;
     year?: string;
+    semester?: string;
     collegeName?: string;
     city?: string;
   };
-  teamMembers: { fullName: string; email: string; phone: string }[];
   teamName: string;
   team: boolean;
+  isStandupComedy?: boolean;
+  festivalPassInput?: string;
+  setFestivalPassInput?: (v: string) => void;
+  appliedPassId?: string | null;
+  passDiscount?: number;
+  isValidatingPass?: boolean;
+  passCouponError?: string | null;
+  passCouponSuccess?: string | null;
+  onApplyPass?: () => void;
+  onRemovePass?: () => void;
 }) {
   const typeLabel =
     participantType === "sage"
-      ? "SAGE University Student"
+      ? "SAGE Student"
       : participantType === "other-college"
-      ? "Other College Student"
-      : "General Participant";
+      ? "Other College/School Student"
+      : "General";
 
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
         <p className="text-[10px] font-semibold tracking-[0.3em] uppercase text-euphoria-gold/60">
-          Review & Confirm
+          Review &amp; Confirm
         </p>
         <h2 className="text-lg sm:text-xl font-bold text-white">Registration Summary</h2>
       </div>
@@ -1321,26 +1437,22 @@ function ReviewStep({
           { label: "Event", value: event.name },
           { label: "Category", value: categoryLabel[event.category] },
           { label: "Participant Type", value: typeLabel },
-          { label: "Name", value: details.fullName },
+          { label: team ? "Team Leader" : "Name", value: details.fullName },
           { label: "Email", value: details.email },
           { label: "Phone", value: details.phone },
           ...(participantType === "sage"
             ? [
                 { label: "Scholar No.", value: details.scholarNumber || "" },
                 { label: "Enrollment", value: details.enrollmentNumber || "" },
-                { label: "Course", value: details.course || "" },
+                { label: "Institute", value: details.institute || "" },
                 { label: "Year", value: details.year || "" },
+                { label: "Semester", value: details.year ? getSemesterFromYear(details.year) : "" },
               ]
             : []),
           ...(participantType === "other-college"
             ? [
-                { label: "College", value: details.collegeName || "" },
-                { label: "Course", value: details.course || "" },
-                { label: "Year", value: details.year || "" },
+                { label: "College / School", value: details.collegeName || "" },
               ]
-            : []),
-          ...(participantType === "general"
-            ? [{ label: "City", value: details.city || "" }]
             : []),
         ]
           .filter((r) => r.value)
@@ -1360,31 +1472,119 @@ function ReviewStep({
       {team && (
         <div className="space-y-3">
           <div className="glass-card rounded-xl p-4 bg-euphoria-purple/[0.04] border border-euphoria-purple/10">
-            <p className="text-xs font-semibold text-white/75">Team Leader: {details.fullName}</p>
+            <div className="flex items-center gap-2">
+              <Users className="size-4 text-euphoria-purple/70 shrink-0" />
+              <p className="text-xs font-semibold text-white/75">
+                Team Leader: {details.fullName}
+              </p>
+            </div>
             <p className="text-[10px] text-white/40 mt-1">
-              The team leader completes the registration and makes the full payment on behalf of the team.
-              Team members cannot be added after registration.
+              Registered on behalf of the team (
+              {event.teamSize ||
+                (event.minTeamSize === event.maxTeamSize
+                  ? `${event.maxTeamSize} members`
+                  : `${event.minTeamSize}–${event.maxTeamSize} members`)}
+              ). The team leader completes the registration and makes the full payment on behalf of the team.
             </p>
           </div>
 
           {teamName && (
-            <div className="py-2 border-b border-white/[0.04]">
-              <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-white/40">
+            <div className="flex items-start justify-between gap-4 py-2.5 border-b border-white/[0.04]">
+              <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-white/40 shrink-0">
                 Team Name
               </span>
-              <span className="text-xs text-white/70 ml-4">{teamName}</span>
+              <span className="text-xs font-semibold text-white/85 text-right">{teamName}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Festival Pass Coupon (Only for Standup Comedy) ── */}
+      {isStandupComedy && (
+        <div className="glass-card rounded-xl p-4 bg-white/[0.02] border border-white/[0.08] space-y-3">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="text-[11px] font-extrabold tracking-[0.2em] uppercase text-euphoria-gold">
+                FESTIVAL PASS HOLDER?
+              </p>
+              <p className="text-xs text-white/50 mt-0.5">
+                Enter your Festival Pass ID
+              </p>
+            </div>
+            {appliedPassId && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0">
+                <Check className="size-3" /> Festival Pass verified
+              </span>
+            )}
+          </div>
+
+          {!appliedPassId ? (
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={festivalPassInput || ""}
+                  onChange={(e) => setFestivalPassInput?.(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      onApplyPass?.();
+                    }
+                  }}
+                  placeholder="EUPH-2026-PAS-XXXXXXXX"
+                  className="flex-1 bg-neutral-900/90 border border-white/[0.1] rounded-lg px-3 py-2 text-xs font-mono tracking-wider text-white uppercase placeholder:text-white/25 focus:outline-none focus:border-euphoria-aqua/50"
+                  disabled={isValidatingPass}
+                />
+                <button
+                  type="button"
+                  onClick={onApplyPass}
+                  disabled={isValidatingPass || !festivalPassInput?.trim()}
+                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-euphoria-aqua to-cyan-400 hover:brightness-110 text-neutral-950 font-extrabold text-xs tracking-wider uppercase disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-md shadow-euphoria-aqua/10 flex items-center gap-1.5 cursor-pointer shrink-0"
+                >
+                  {isValidatingPass ? (
+                    <>
+                      <Loader2 className="size-3.5 animate-spin text-neutral-950" />
+                      APPLYING
+                    </>
+                  ) : (
+                    "APPLY"
+                  )}
+                </button>
+              </div>
+              {passCouponError && (
+                <p className="text-[11px] text-rose-400 font-medium">{passCouponError}</p>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center justify-between bg-emerald-500/10 p-2.5 rounded-lg border border-emerald-500/20">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xs font-bold text-emerald-300">
+                  {appliedPassId}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={onRemovePass}
+                className="text-[11px] text-white/50 hover:text-rose-400 transition-colors underline cursor-pointer"
+              >
+                Remove
+              </button>
             </div>
           )}
 
-          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-white/40">
-            Team Members ({teamMembers.length})
-          </p>
-          {teamMembers.map((m, i) => (
-            <div key={i} className="glass-card rounded-lg p-3">
-              <p className="text-xs text-white/65">{m.fullName || `Member ${i + 1}`}</p>
-              <p className="text-[10px] text-white/40">{m.email} · {m.phone}</p>
+          {/* Pricing Breakdown */}
+          <div className="pt-2 border-t border-white/[0.06] space-y-1.5 text-xs">
+            <div className="flex justify-between text-white/60">
+              <span>Event Fee</span>
+              <span>₹199</span>
             </div>
-          ))}
+            {appliedPassId && (passDiscount ?? 0) > 0 && (
+              <div className="flex justify-between text-emerald-400 font-medium">
+                <span>Festival Pass Discount</span>
+                <span>-₹{passDiscount}</span>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1393,11 +1593,11 @@ function ReviewStep({
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-white/40">
-              Total Payable
+              TOTAL PAYABLE
             </p>
             <p className="text-[10px] text-white/30 mt-0.5">
               Entry fee for {event.name}
-              {team ? " (team)" : ""}
+              {team ? " (team registration)" : ""}
             </p>
           </div>
           <p className="text-2xl font-bold text-euphoria-aqua">
@@ -1516,16 +1716,12 @@ function PaymentStep({
 function PendingStep({ event }: { event: EuphoriaEvent }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[40vh] text-center space-y-6 py-8">
-      <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-        className="size-16 rounded-full bg-euphoria-aqua/10 border border-euphoria-aqua/20 flex items-center justify-center"
-      >
-        <Loader2 className="size-8 text-euphoria-aqua" />
-      </motion.div>
+      <div className="size-16 rounded-full bg-euphoria-aqua/10 border border-euphoria-aqua/20 flex items-center justify-center">
+        <Loader2 className="size-8 text-euphoria-aqua animate-spin" />
+      </div>
 
       <div className="space-y-2">
-        <h2 className="text-lg sm:text-xl font-bold text-white">Processing Payment</h2>
+        <h2 className="text-lg sm:text-xl font-bold text-white">Processing...</h2>
         <p className="text-sm text-white/55">
           Please do not refresh or close this page.
         </p>
@@ -1550,20 +1746,24 @@ function SuccessStep({
   amount,
   details,
   participantType,
+  team,
+  teamName,
   onClose,
 }: {
   event: EuphoriaEvent;
   amount: number;
   details: { fullName: string; email: string; phone: string };
   participantType: ParticipantCategory;
+  team?: boolean;
+  teamName?: string;
   onClose: () => void;
 }) {
   const typeLabel =
     participantType === "sage"
-      ? "SAGE University Student"
+      ? "SAGE Student"
       : participantType === "other-college"
-      ? "Other College Student"
-      : "General Participant";
+      ? "Other College/School Student"
+      : "General";
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[50vh] text-center space-y-8 py-8">
@@ -1591,10 +1791,12 @@ function SuccessStep({
         className="space-y-2"
       >
         <h2 className="text-xl sm:text-2xl font-bold text-white">
-          Payment Successful
+          Registration Confirmed
         </h2>
-        <p className="text-sm text-white/55">
-          Your registration has been confirmed.
+        <p className="text-sm text-white/70">
+          {team
+            ? "Your team registration has been confirmed."
+            : "Your registration has been confirmed."}
         </p>
       </motion.div>
 
@@ -1609,8 +1811,14 @@ function SuccessStep({
           <span className="text-white/40">Event</span>
           <span className="text-white/70 text-right">{event.name}</span>
         </div>
+        {team && teamName && (
+          <div className="flex justify-between text-xs">
+            <span className="text-white/40">Team Name</span>
+            <span className="text-white/70 text-right font-medium text-white/90">{teamName}</span>
+          </div>
+        )}
         <div className="flex justify-between text-xs">
-          <span className="text-white/40">Participant</span>
+          <span className="text-white/40">{team ? "Team Leader" : "Participant"}</span>
           <span className="text-white/70">{details.fullName}</span>
         </div>
         <div className="flex justify-between text-xs">
@@ -1638,10 +1846,8 @@ function SuccessStep({
         <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-euphoria-gold/55 mb-1">
           Confirmation Notice
         </p>
-        <p className="text-xs text-white/45 leading-relaxed">
-          Your registration details have been recorded. A confirmation will be sent to your email.
-          This is a frontend demo — in production, the backend will verify payment with Easebuzz
-          before confirming registration.
+        <p className="text-xs text-white/60 leading-relaxed">
+          Your registration has been confirmed. A transactional confirmation email has been sent to your registered email address.
         </p>
       </motion.div>
 
@@ -1671,21 +1877,33 @@ function FailedStep({
   onClose: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[50vh] text-center space-y-8 py-8">
+    <div className="flex flex-col items-center justify-center min-h-[50vh] text-center space-y-6 py-8">
       {/* Failed icon */}
       <motion.div
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
-        className="size-20 rounded-full bg-red-400/10 border border-red-400/20 flex items-center justify-center"
+        className="size-20 rounded-full bg-rose-500/[0.08] border border-rose-400/30 shadow-[0_0_35px_rgba(244,63,94,0.15)] flex items-center justify-center"
       >
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ duration: 0.4, delay: 0.3 }}
         >
-          <X className="size-10 text-red-400" />
+          <X className="size-9 text-rose-400" />
         </motion.div>
+      </motion.div>
+
+      {/* Eyebrow badge */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35, duration: 0.4 }}
+      >
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-rose-400/30 bg-rose-500/10 text-rose-300 text-[10px] font-bold tracking-[0.2em] uppercase">
+          <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+          Payment Unsuccessful
+        </span>
       </motion.div>
 
       {/* Title */}
@@ -1696,10 +1914,10 @@ function FailedStep({
         className="space-y-2"
       >
         <h2 className="text-xl sm:text-2xl font-bold text-white">
-          Payment Failed
+          Payment Not Completed
         </h2>
-        <p className="text-sm text-red-400/80 max-w-sm mx-auto">
-          {apiError || "Something went wrong while processing your payment."}
+        <p className="text-sm text-white/65 max-w-sm mx-auto leading-relaxed">
+          {apiError || "The transaction was not completed and no funds were debited."}
         </p>
       </motion.div>
 
@@ -1708,29 +1926,38 @@ function FailedStep({
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5, duration: 0.4 }}
-        className="glass-card rounded-xl p-5 space-y-3 w-full max-w-sm"
+        className="glass-card rounded-xl p-5 space-y-3 w-full max-w-sm text-left border border-white/[0.08]"
       >
         <div className="flex justify-between text-xs">
           <span className="text-white/40">Event</span>
-          <span className="text-white/70 text-right">{event.name}</span>
+          <span className="text-white/80 font-medium text-right">{event.name}</span>
         </div>
         <div className="h-px bg-white/[0.06]" />
-        <p className="text-xs text-white/45 leading-relaxed">
-          Your registration has not been completed. No payment has been charged.
-          You can try again or return to the registration form.
+        <p className="text-xs text-white/55 leading-relaxed">
+          Your registration details are preserved. You can try again now or return to explore other events.
         </p>
       </motion.div>
 
-      {/* Actions are in the footer — handled by the main component */}
+      {/* Action buttons */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6, duration: 0.4 }}
-        className="text-center"
+        className="flex flex-col sm:flex-row items-center gap-3 w-full max-w-sm pt-2"
       >
-        <p className="text-xs text-white/40">
-          If the issue persists, please contact the event helpdesk.
-        </p>
+        <button
+          onClick={onRetry}
+          className="w-full py-3 px-4 text-xs font-semibold tracking-[0.15em] uppercase bg-gradient-to-r from-euphoria-aqua to-euphoria-teal text-white rounded-xl hover:opacity-95 transition-all duration-300 shadow-lg shadow-euphoria-aqua/15 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+        >
+          <RotateCcw className="size-3.5" />
+          Try Again
+        </button>
+        <button
+          onClick={onClose}
+          className="w-full py-3 px-4 text-xs font-semibold tracking-[0.15em] uppercase bg-white/[0.04] text-white/70 rounded-xl hover:bg-white/[0.08] hover:text-white transition-all duration-300 border border-white/10 cursor-pointer active:scale-[0.98]"
+        >
+          Close
+        </button>
       </motion.div>
     </div>
   );

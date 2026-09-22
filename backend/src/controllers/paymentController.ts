@@ -54,11 +54,16 @@ export const handleEasebuzzResponseHandler = async (
     // Redirect browser to frontend result page
     res.redirect(302, result.redirectUrl);
   } catch (error: any) {
-    console.error("[PaymentController] Error processing Easebuzz response:", error.message);
+    const txnid = req.body?.txnid ? String(req.body.txnid).slice(0, 80) : "";
+    console.error(
+      `[PaymentController] Payment callback processing failed${txnid ? ` for txnid ${txnid}` : ""}:`,
+      error.message
+    );
     const frontendBaseUrl = process.env.APP_FRONTEND_URL || "http://localhost:5173";
+    const txnidParam = txnid ? `&txnid=${encodeURIComponent(txnid)}` : "";
     res.redirect(
       302,
-      `${frontendBaseUrl}/payment/result?status=failed&error=${encodeURIComponent(
+      `${frontendBaseUrl}/payment/result?status=failed${txnidParam}&error=${encodeURIComponent(
         error.message || "Payment processing failed"
       )}`
     );

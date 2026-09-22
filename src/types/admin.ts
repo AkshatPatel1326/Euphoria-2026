@@ -86,8 +86,10 @@ export interface AdminRegistration {
   scholarNumber?: string | null;
   enrollmentNumber?: string | null;
   collegeName?: string | null;
+  institute?: string | null;
   course?: string | null;
   year?: string | null;
+  semester?: string | null;
   city?: string | null;
   isEmailVerified: boolean;
   emailVerifiedAt?: string | null;
@@ -107,6 +109,16 @@ export interface AdminPass {
   features: string[];
 }
 
+export interface AdminPassHolder {
+  id: string;
+  passPurchaseId: string;
+  holderIndex: number;
+  fullName: string;
+  email: string;
+  phone: string;
+  createdAt?: string;
+}
+
 export interface AdminPassPurchase {
   id: string;
   passNumber: string;
@@ -118,7 +130,11 @@ export interface AdminPassPurchase {
   phone: string;
   participantCategory: ParticipantCategory;
   collegeName?: string | null;
+  institute?: string | null;
+  year?: string | null;
+  semester?: string | null;
   quantity: number;
+  holders?: AdminPassHolder[];
   isEmailVerified: boolean;
   emailVerifiedAt?: string | null;
   status: RegistrationStatus;
@@ -158,3 +174,25 @@ export interface PaginationMeta {
   limit: number;
   totalPages: number;
 }
+
+export interface AdminAnnouncement {
+  id: string;
+  title: string;
+  content: string;
+  category?: string | null;
+  imageUrl?: string | null;
+  linkUrl?: string | null;
+  linkText?: string | null;
+  isPinned: boolean;
+  isPublished: boolean;
+  publishedAt?: string | null;
+  authorId?: string | null;
+  author?: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+

@@ -9,6 +9,7 @@
     "start": "tsx src/server.ts",
     "seed": "prisma db seed",
     "db:clean-test-data": "tsx src/scripts/clean-test-data.ts",
+    "test:email": "tsx src/scripts/testEmail.ts",
     "postinstall": "prisma skills sync || exit 0",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

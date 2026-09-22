@@ -66,18 +66,20 @@ function FaqItem({
       <div
         className={`border-b transition-colors duration-300 ${
           isOpen
-            ? "border-euphoria-gold/15"
-            : "border-white/[0.04] hover:border-white/[0.08]"
+            ? "border-euphoria-gold/35 sm:border-euphoria-gold/25"
+            : "border-white/[0.08] sm:border-white/[0.05] hover:border-white/[0.12]"
         }`}
       >
         <button
           onClick={onToggle}
           aria-expanded={isOpen}
-          className="w-full flex items-center justify-between gap-4 py-5 sm:py-6 text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-euphoria-aqua/40 focus-visible:ring-offset-2 focus-visible:ring-offset-euphoria-dark rounded-sm"
+          className="w-full min-h-[52px] sm:min-h-[56px] flex items-center justify-between gap-3.5 sm:gap-4 py-4 sm:py-6 text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-euphoria-aqua/40 focus-visible:ring-offset-2 focus-visible:ring-offset-euphoria-dark rounded-sm cursor-pointer"
         >
           <span
-            className={`text-sm sm:text-base font-medium tracking-wide transition-colors duration-300 ${
-              isOpen ? "text-white/90" : "text-white/65 group-hover:text-white/80"
+            className={`text-[15px] sm:text-[17px] leading-snug sm:leading-normal tracking-wide transition-colors duration-300 pr-2 ${
+              isOpen
+                ? "text-white font-bold"
+                : "text-white/90 sm:text-white/85 group-hover:text-white font-semibold"
             }`}
           >
             {item.q}
@@ -86,25 +88,25 @@ function FaqItem({
           {/* Expand/collapse icon */}
           <motion.span
             animate={{ rotate: isOpen ? 45 : 0 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full border flex items-center justify-center transition-all duration-300"
             style={{
               borderColor: isOpen
-                ? "rgba(175,153,71,0.25)"
-                : "rgba(255,255,255,0.06)",
+                ? "rgba(175,153,71,0.55)"
+                : "rgba(255,255,255,0.18)",
               backgroundColor: isOpen
-                ? "rgba(175,153,71,0.06)"
-                : "rgba(255,255,255,0.02)",
+                ? "rgba(175,153,71,0.14)"
+                : "rgba(255,255,255,0.04)",
             }}
           >
             <span
-              className={`block w-3 h-px transition-colors duration-300 ${
-                isOpen ? "bg-euphoria-gold/60" : "bg-white/20"
+              className={`block w-3 h-[1.5px] rounded-full transition-colors duration-300 ${
+                isOpen ? "bg-euphoria-gold" : "bg-white/80 group-hover:bg-white"
               }`}
             />
             <span
-              className={`absolute block w-px h-3 transition-all duration-300 ${
-                isOpen ? "bg-euphoria-gold/60 opacity-0 scale-0" : "bg-white/20 opacity-100 scale-100"
+              className={`absolute block w-[1.5px] h-3 rounded-full transition-all duration-300 ${
+                isOpen ? "bg-euphoria-gold opacity-0 scale-0" : "bg-white/80 group-hover:bg-white opacity-100 scale-100"
               }`}
             />
           </motion.span>
@@ -116,10 +118,10 @@ function FaqItem({
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+              transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
               className="overflow-hidden"
             >
-              <p className="pb-5 sm:pb-6 text-sm sm:text-[15px] text-white/65 leading-relaxed font-light max-w-2xl">
+              <p className="pb-5 sm:pb-6 text-sm sm:text-base text-white/90 sm:text-white/85 leading-relaxed font-normal max-w-2xl">
                 {item.a}
               </p>
             </motion.div>
@@ -144,7 +146,7 @@ export function FAQ() {
   return (
     <section
       id="faq"
-      className="relative py-24 sm:py-32 lg:py-40 overflow-hidden"
+      className="relative py-12 sm:py-16 lg:py-20 overflow-hidden"
     >
       {/* Background */}
       <div className="absolute inset-0 bg-euphoria-dark" />
@@ -164,26 +166,29 @@ export function FAQ() {
       />
 
       <div className="relative z-10 mx-auto max-w-[1536px] px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-12 lg:grid-cols-12 lg:gap-16 items-start">
+        <div className="grid gap-10 lg:grid-cols-12 lg:gap-14 items-start">
           {/* Left — heading */}
           <div className="lg:col-span-5">
-            <BlurFade inViewMargin="-100px" className="mb-6">
-              <span className="inline-block text-[10px] sm:text-[11px] font-semibold tracking-[0.4em] uppercase text-euphoria-gold/60">
-                Solutions for Your Curiosities
-              </span>
+            <BlurFade inViewMargin="-20px" className="mb-4 sm:mb-5">
+              <div className="inline-flex items-center gap-2.5 px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full border border-euphoria-gold/50 bg-euphoria-gold/[0.14] mb-3 backdrop-blur-sm">
+                <span className="w-2 h-2 rounded-full bg-euphoria-gold animate-pulse" />
+                <span className="text-xs sm:text-base lg:text-[17px] font-extrabold tracking-[0.2em] sm:tracking-[0.3em] uppercase text-euphoria-gold">
+                  FAQ & Helpdesk
+                </span>
+              </div>
             </BlurFade>
 
-            <BlurFade delay={0.1} inViewMargin="-100px">
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-[1.0]">
+            <BlurFade delay={0.06} inViewMargin="-20px">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-[1.05]">
                 <span className="text-white block">Euphoria</span>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-euphoria-gold via-euphoria-purple to-euphoria-aqua block mt-2">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-euphoria-gold via-purple-300 to-euphoria-aqua block mt-1 sm:mt-2">
                   Helpdesk
                 </span>
               </h2>
             </BlurFade>
 
-            <BlurFade delay={0.2} inViewMargin="-100px" className="mt-6">
-              <p className="text-sm sm:text-base text-white/60 max-w-sm leading-relaxed font-light">
+            <BlurFade delay={0.12} inViewMargin="-20px" className="mt-4 sm:mt-6">
+              <p className="text-sm sm:text-lg text-white/85 sm:text-white/80 max-w-sm leading-relaxed font-normal">
                 Everything you need to know before the fest begins.
               </p>
             </BlurFade>
@@ -205,7 +210,7 @@ export function FAQ() {
       </div>
 
       {/* Bottom divider */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-euphoria-gold/10 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-euphoria-gold/15 to-transparent" />
     </section>
   );
 }

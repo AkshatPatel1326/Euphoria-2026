@@ -11,8 +11,10 @@ interface NavLinkItem {
 
 const navLinks: NavLinkItem[] = [
   { label: "Home", href: "#home" },
+  { label: "Updates", href: "#updates" },
   { label: "About", href: "#about" },
   { label: "Events", href: "#events" },
+  { label: "Pro Night", href: "#pro-night" },
   { label: "Passes", href: "#passes" },
   { label: "Sponsors", href: "#sponsors" },
   { label: "FAQ", href: "#faq" },
@@ -139,44 +141,66 @@ export function Navbar() {
         <div className="mx-auto max-w-[1536px] px-4 sm:px-6 lg:px-8">
           <div
             className={`flex items-center justify-between transition-all duration-500 ${
-              scrolled ? "h-16" : "h-16 md:h-20"
+              scrolled ? "h-18 md:h-20 lg:h-22" : "h-20 md:h-24 lg:h-26"
             }`}
           >
-            {/* Brand */}
-            <motion.button
-              onClick={handleLogoClick}
-              className="flex items-center gap-2 group"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <img
-                src="/assets/Sage_euphoria_logp.png"
-                alt="SAGE Euphoria logo"
-                className="h-12 sm:h-14 md:h-16 lg:h-[68px] w-auto object-contain transition-all duration-300 group-hover:opacity-100 opacity-90"
-              />
-            </motion.button>
+            {/* Brand Group — Euphoria (Primary) & SAGE University (Secondary) */}
+            <div className="flex items-center gap-2 min-[380px]:gap-3 sm:gap-4 lg:gap-5">
+              {/* Primary: SAGE Euphoria */}
+              <motion.button
+                onClick={handleLogoClick}
+                className="flex items-center cursor-pointer group"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
+                aria-label="SAGE Euphoria Home"
+              >
+                <img
+                  src="/assets/Sage_euphoria_logp.png"
+                  alt="SAGE Euphoria logo"
+                  className="h-10 min-[380px]:h-12 sm:h-15 md:h-18 lg:h-[90px] xl:h-[98px] w-auto object-contain transition-all duration-300 group-hover:opacity-100 opacity-95 filter drop-shadow-[0_0_20px_rgba(255,255,255,0.22)]"
+                />
+              </motion.button>
+
+              {/* Elegant divider */}
+              <div className="h-5 min-[380px]:h-6 sm:h-8 md:h-10 lg:h-11 w-px bg-white/20 shrink-0" aria-hidden="true" />
+
+              {/* Secondary: SAGE University White Logo */}
+              <motion.button
+                onClick={handleLogoClick}
+                className="flex items-center cursor-pointer group"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                aria-label="SAGE University"
+              >
+                <img
+                  src="/assets/sage-university-logo.png"
+                  alt="SAGE University logo"
+                  className="h-5 min-[380px]:h-6 sm:h-7 md:h-9 lg:h-[42px] xl:h-[46px] w-auto object-contain transition-all duration-300 group-hover:opacity-100 opacity-90 filter drop-shadow-[0_0_12px_rgba(255,255,255,0.15)]"
+                />
+              </motion.button>
+            </div>
 
             {/* Desktop Nav */}
-            <div className="hidden md:flex items-center gap-1">
+            <div className="hidden lg:flex items-center gap-0.5 lg:gap-1">
               {navLinks.map((link) => {
                 const isActive = isLinkActive(link);
                 return (
                   <button
                     key={link.href}
                     onClick={() => handleNavClick(link)}
-                    className={`relative px-4 py-2 text-[11px] sm:text-xs font-medium tracking-[0.15em] uppercase transition-colors duration-300 group ${
+                    className={`relative px-2 sm:px-2.5 lg:px-2.5 xl:px-3.5 py-2 text-xs lg:text-[13px] xl:text-[14.5px] font-semibold tracking-[0.1em] xl:tracking-[0.12em] uppercase transition-colors duration-300 group ${
                       isActive
-                        ? "text-euphoria-aqua"
-                        : "text-white/45 hover:text-euphoria-aqua/80"
+                        ? "text-euphoria-aqua font-bold"
+                        : "text-white/80 hover:text-white"
                     }`}
                   >
                     {link.label}
                     {/* Underline */}
                     <span
-                      className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] rounded-full transition-all duration-400 ${
+                      className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-[2.5px] rounded-full transition-all duration-300 ${
                         isActive
-                          ? "w-3/4 bg-euphoria-aqua/70 shadow-[0_0_10px_rgba(62,238,213,0.4)]"
-                          : "w-0 bg-euphoria-aqua/50 group-hover:w-3/4 group-hover:shadow-[0_0_8px_rgba(62,238,213,0.3)]"
+                          ? "w-3/4 bg-euphoria-aqua/90 shadow-[0_0_12px_rgba(62,238,213,0.6)]"
+                          : "w-0 bg-euphoria-aqua/60 group-hover:w-3/4 group-hover:shadow-[0_0_8px_rgba(62,238,213,0.3)]"
                       }`}
                     />
                   </button>
@@ -187,7 +211,7 @@ export function Navbar() {
             {/* Mobile toggle */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden relative z-50 p-2 text-white/50 hover:text-euphoria-aqua transition-colors"
+              className="lg:hidden relative z-50 min-h-[44px] min-w-[44px] flex items-center justify-center p-2.5 text-white/80 hover:text-euphoria-aqua transition-colors cursor-pointer"
               aria-label="Toggle menu"
             >
               <AnimatePresence mode="wait">
@@ -226,9 +250,9 @@ export function Navbar() {
             animate={{ opacity: 1, backdropFilter: "blur(24px)" }}
             exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
             transition={{ duration: 0.4, ease: "easeInOut" }}
-            className="fixed inset-0 z-40 bg-euphoria-dark/90 md:hidden"
+            className="fixed inset-0 z-40 bg-euphoria-dark/95 lg:hidden overflow-y-auto"
           >
-            <div className="flex flex-col items-center justify-center h-full gap-8">
+            <div className="flex flex-col items-center justify-center min-h-screen py-24 px-6 gap-5 sm:gap-7">
               {navLinks.map((link, i) => {
                 const isActive = isLinkActive(link);
                 return (
@@ -239,17 +263,17 @@ export function Navbar() {
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ delay: i * 0.07, duration: 0.4, ease: "easeOut" }}
                     onClick={() => handleNavClick(link)}
-                    className={`text-2xl font-light tracking-[0.2em] uppercase transition-colors duration-300 ${
+                    className={`min-h-[44px] flex flex-col items-center justify-center text-xl sm:text-2xl font-light tracking-[0.2em] uppercase transition-colors duration-300 py-1.5 cursor-pointer ${
                       isActive
-                        ? "text-euphoria-aqua"
-                        : "text-white/60 hover:text-euphoria-aqua"
+                        ? "text-euphoria-aqua font-semibold"
+                        : "text-white/85 hover:text-white"
                     }`}
                   >
-                    {link.label}
+                    <span>{link.label}</span>
                     {isActive && (
                       <motion.div
                         layoutId="mobile-active"
-                        className="h-px w-full bg-euphoria-aqua/40 mt-2"
+                        className="h-0.5 w-full bg-euphoria-aqua/60 mt-1.5 rounded-full"
                       />
                     )}
                   </motion.button>
@@ -259,7 +283,7 @@ export function Navbar() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
-                className="mt-8 text-[10px] tracking-[0.3em] uppercase text-euphoria-gold/30"
+                className="mt-6 text-[10px] sm:text-xs tracking-[0.3em] uppercase text-euphoria-gold/70"
               >
                 SAGE Euphoria 2026
               </motion.div>
@@ -267,7 +291,7 @@ export function Navbar() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6 }}
-                className="text-[9px] tracking-[0.2em] uppercase text-white/10"
+                className="text-[9px] sm:text-[10px] tracking-[0.2em] uppercase text-white/40"
               >
                 SAGE University
               </motion.div>

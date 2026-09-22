@@ -4,13 +4,13 @@ import { BlurFade } from "@/components/magicui/blur-fade";
 
 export function Glimpses() {
   const sectionRef = useRef<HTMLElement>(null);
-  const inView = useInView(sectionRef, { once: true, margin: "-80px" });
+  const inView = useInView(sectionRef, { once: true, margin: "-20px" });
 
   return (
     <section
       id="glimpses"
       ref={sectionRef}
-      className="relative py-24 sm:py-32 lg:py-40 overflow-hidden"
+      className="relative py-12 sm:py-16 lg:py-20 overflow-hidden"
     >
       {/* Background atmosphere */}
       <div className="absolute inset-0 bg-euphoria-dark" />
@@ -31,38 +31,41 @@ export function Glimpses() {
 
       <div className="relative z-10 mx-auto max-w-[1536px] px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <BlurFade inViewMargin="-100px" className="mb-10 sm:mb-14 text-center">
-          <span className="inline-block text-[10px] sm:text-[11px] font-semibold tracking-[0.4em] uppercase text-euphoria-gold/60 mb-4">
-            Past Editions — 2023 · 2024 · 2025
-          </span>
+        <BlurFade inViewMargin="-20px" className="mb-8 sm:mb-10 text-center">
+          <div className="inline-flex items-center gap-2 sm:gap-2.5 px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full border border-euphoria-gold/50 bg-euphoria-gold/[0.14] mb-4 backdrop-blur-sm">
+            <span className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-euphoria-gold animate-pulse shrink-0" />
+            <span className="text-xs sm:text-base lg:text-[16px] font-extrabold tracking-[0.16em] sm:tracking-[0.28em] uppercase text-euphoria-gold">
+              Past Editions — 2023 · 2024 · 2025
+            </span>
+          </div>
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-tight">
             <span className="text-white">Glimpses of </span>
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-euphoria-purple via-euphoria-gold to-euphoria-aqua">
               Euphoria
             </span>
           </h2>
-          <p className="mt-5 text-sm sm:text-base text-white/65 max-w-xl mx-auto leading-relaxed">
+          <p className="mt-4 text-base sm:text-lg text-white/80 max-w-xl mx-auto leading-relaxed font-normal">
             Experience the energy, creativity, and unforgettable moments that define Euphoria.
           </p>
         </BlurFade>
 
         {/* Video feature area */}
-        <BlurFade delay={0.2} inViewMargin="-60px">
+        <BlurFade delay={0.1} inViewMargin="-20px">
           <motion.div
-            initial={{ opacity: 0, scale: 0.97, filter: "blur(8px)" }}
+            initial={{ opacity: 0, scale: 0.98, filter: "blur(4px)" }}
             animate={
               inView
                 ? { opacity: 1, scale: 1, filter: "blur(0px)" }
                 : {}
             }
-            transition={{ duration: 1.0, delay: 0.3, ease: "easeOut" }}
+            transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
             className="relative w-full aspect-video max-h-[600px] rounded-2xl overflow-hidden border border-white/[0.06] group cursor-pointer"
           >
             {/* YouTube embed */}
             <div className="absolute inset-0 bg-black">
               <iframe
-                src="https://www.youtube.com/embed/O8MIClJWYr4?rel=0&modestbranding=1&color=white"
-                title="Glimpses of Euphoria"
+                src="https://www.youtube-nocookie.com/embed/UninC6no5oU?rel=0&modestbranding=1&color=white"
+                title="Euphoria Aftermovie"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
                 className="absolute inset-0 w-full h-full border-0"

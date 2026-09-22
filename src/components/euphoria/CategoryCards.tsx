@@ -9,6 +9,7 @@ const categoryAtmosphere: Record<EventCategory, string> = {
   "literary-management": "radial-gradient(ellipse 60% 50% at 50% 50%, rgba(175,153,71,0.06) 0%, transparent 70%)",
   "science-tech": "radial-gradient(ellipse 60% 50% at 50% 50%, rgba(62,238,213,0.06) 0%, transparent 70%)",
   sports: "radial-gradient(ellipse 60% 50% at 50% 50%, rgba(23,111,99,0.07) 0%, transparent 70%)",
+  test: "radial-gradient(ellipse 60% 50% at 50% 50%, rgba(245,158,11,0.07) 0%, transparent 70%)",
 };
 
 /* ── Category visual area — consistent across all four ─────── */
@@ -30,16 +31,30 @@ function CategoryVisual({
           ? "/events/science-tech"
           : "/events/sports";
 
-  const sharedVisualClass = "relative w-full lg:w-[420px] xl:w-[480px] aspect-[4/3] sm:aspect-[16/10] rounded-2xl overflow-hidden cursor-pointer";
+  const sharedVisualClass = "relative w-full lg:w-[420px] xl:w-[480px] aspect-[16/10] lg:aspect-[4/3] rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-[0.99] transition-transform";
 
   /* ── Category poster images ── */
   const categoryPosters: Partial<Record<EventCategory, string>> = {
-    cultural: "/assets/Cultural_.jpeg",
-    "literary-management": "/assets/Literary___Management.jpeg",
-    "science-tech": "/assets/Science_and_Technology.jpeg",
-    sports: "/assets/Sports_.jpeg",
+    cultural: "/assets/Cultural Category.jpg",
+    "literary-management": "/assets/Literary & Management Category.jpg",
+    "science-tech": "/assets/Science & Technology Category.jpg",
+    sports: "/assets/Sport Category.jpg",
   };
   const posterSrc = categoryPosters[category];
+
+  const categoryFallbacks: Record<string, string> = {
+    "/assets/Cultural_.jpeg": "/assets/Cultural Category.jpg",
+    "/assets/Cultural Category.jpg": "/assets/Cultural Category.jpg",
+    "/assets/Literary___Management.jpeg": "/assets/Literary & Management Category.jpg",
+    "/assets/Literary & Management Category.jpg": "/assets/Literary & Management Category.jpg",
+    "/assets/Literary%20&%20Management%20Category.jpg": "/assets/Literary & Management Category.jpg",
+    "/assets/Science_and_Technology.jpeg": "/assets/Science & Technology Category.jpg",
+    "/assets/Science & Technology Category.jpg": "/assets/Science & Technology Category.jpg",
+    "/assets/Science%20&%20Technology%20Category.jpg": "/assets/Science & Technology Category.jpg",
+    "/assets/Sports_.jpeg": "/assets/Sport Category.jpg",
+    "/assets/Sports Category.jpg": "/assets/Sport Category.jpg",
+    "/assets/Sport Category.jpg": "/assets/Sport Category.jpg",
+  };
 
   /* ── All categories: uniform visual treatment ── */
   return (
@@ -56,6 +71,9 @@ function CategoryVisual({
       <div
         className={`${sharedVisualClass} border border-white/[0.04] group-hover:border-white/[0.1] transition-all duration-500 group-hover:shadow-[0_12px_60px_rgba(0,0,0,0.5)]`}
         onClick={() => navigate(route)}
+        role="button"
+        tabIndex={0}
+        aria-label={`View ${meta.label} events`}
       >
         {/* Poster image or gradient background */}
         {posterSrc ? (
@@ -64,6 +82,14 @@ function CategoryVisual({
               src={posterSrc}
               alt={`${meta.label} category poster`}
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+              onError={(e) => {
+                const current = e.currentTarget.getAttribute("src") || "";
+                const decoded = decodeURIComponent(current);
+                const fallback = categoryFallbacks[current] || categoryFallbacks[decoded];
+                if (fallback && e.currentTarget.src !== fallback) {
+                  e.currentTarget.src = fallback;
+                }
+              }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-euphoria-dark/80 via-euphoria-dark/20 to-transparent" />
           </>
@@ -134,7 +160,9 @@ function CategoryRow({
 }) {
   const navigate = useNavigate();
   const meta = categoryMeta[category];
-  const eventCount = events.filter((e) => e.category === category).length;
+  const eventCount = events.filter(
+    (e) => e.category === category && e.status !== "DRAFT" && e.id !== "cultural-6"
+  ).length;
   const isEven = index % 2 === 0;
 
   const route =
@@ -148,15 +176,15 @@ function CategoryRow({
 
   return (
     <BlurFade
-      delay={index * 0.12}
-      duration={0.8}
-      yOffset={40}
-      inViewMargin="-80px"
-      className="group relative grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-6 lg:gap-12 items-center py-12 sm:py-16 lg:py-20 border-b border-white/[0.04] last:border-b-0"
+      delay={index * 0.08}
+      duration={0.4}
+      yOffset={20}
+      inViewMargin="-20px"
+      className="group relative grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-5 sm:gap-6 lg:gap-10 items-center py-7 sm:py-9 lg:py-12 border-b border-white/[0.06] last:border-b-0"
     >
       {/* Subtle category atmosphere glow on the row */}
       <div
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none rounded-3xl"
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none rounded-3xl"
         style={{ background: categoryAtmosphere[category] }}
       />
 
@@ -168,11 +196,11 @@ function CategoryRow({
         {/* Oversized number */}
         <div className="relative mb-2 sm:mb-3">
           <span
-            className="text-[65px] sm:text-[80px] md:text-[105px] lg:text-[130px] font-black leading-none select-none tracking-tighter"
+            className="text-[46px] sm:text-[70px] md:text-[105px] lg:text-[130px] font-black leading-none select-none tracking-tighter"
             style={{
               color: `${meta.color}35`,
               WebkitTextStroke: `2px ${meta.color}80`,
-              textShadow: `0 0 60px ${meta.color}25, 0 0 120px ${meta.color}10`,
+              textShadow: `0 0 40px ${meta.color}25, 0 0 80px ${meta.color}10`,
             }}
           >
             {meta.number}
@@ -181,41 +209,42 @@ function CategoryRow({
 
         {/* Category name */}
         <h3
-          className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black tracking-tight uppercase"
+          className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight uppercase leading-tight"
           style={{ color: meta.color }}
         >
           {meta.label}
         </h3>
 
         {/* Keywords */}
-        <p className="mt-3 text-[11px] sm:text-xs tracking-[0.2em] uppercase text-white/55 font-light">
+        <p className="mt-2 sm:mt-2.5 text-[11px] sm:text-xs md:text-sm tracking-[0.14em] sm:tracking-[0.2em] uppercase text-white/60 font-semibold leading-normal">
           {meta.keywords}
         </p>
 
         {/* Description */}
-        <p className="mt-4 text-sm sm:text-base text-white/65 max-w-md leading-relaxed font-light">
+        <p className="mt-2.5 sm:mt-3.5 text-sm sm:text-base lg:text-lg text-white/75 sm:text-white/80 max-w-md leading-relaxed font-normal">
           {meta.description}
         </p>
 
         {/* Event count + CTA */}
         <div
-          className={`mt-6 flex items-center gap-4 ${isEven ? "" : "lg:justify-end"}`}
+          className={`mt-4 sm:mt-5 flex items-center justify-between sm:justify-start gap-4 ${isEven ? "" : "lg:justify-end"}`}
           style={{ direction: "ltr" }}
         >
-          <span className="text-xs text-white/50 tracking-wider">
+          <span className="text-xs sm:text-sm text-white/60 tracking-wider font-medium">
             {eventCount} events
           </span>
           <motion.button
-            whileHover={{ x: 4 }}
+            whileHover={{ scale: 1.02, x: 2 }}
             whileTap={{ scale: 0.97 }}
             onClick={() => navigate(route)}
-            className="flex items-center gap-2 text-xs font-semibold tracking-[0.15em] uppercase transition-all duration-300 group/cta"
-            style={{ color: `${meta.color}99` }}
+            className="min-h-[42px] sm:min-h-0 flex items-center gap-2 text-xs sm:text-sm font-bold tracking-[0.14em] uppercase transition-all duration-300 group/cta text-white/95 hover:text-white px-3.5 py-2 sm:px-1 sm:py-0.5 rounded-lg sm:rounded-md bg-white/[0.06] sm:bg-transparent border border-white/15 sm:border-0 hover:border-white/30 hover:bg-white/[0.1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-euphoria-aqua"
+            aria-label={`Explore ${meta.label} events`}
           >
-            <span className="group-hover:text-white group-hover/cta:text-white transition-colors">
-              Explore Events
-            </span>
-            <span className="transition-transform group-hover:translate-x-1 group-hover/cta:translate-x-1.5">
+            <span>Explore Events</span>
+            <span
+              className="transition-transform group-hover:translate-x-1 group-hover/cta:translate-x-1.5 font-bold text-sm sm:text-base"
+              style={{ color: meta.color }}
+            >
               →
             </span>
           </motion.button>
@@ -231,7 +260,7 @@ function CategoryRow({
 /* ── Main section ───────────────────────────────────────────── */
 export function CategoryCards() {
   return (
-    <section id="events" className="relative py-20 sm:py-28 lg:py-36 overflow-hidden">
+    <section id="events" className="relative py-14 sm:py-16 lg:py-20 overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-euphoria-darker" />
       <div
@@ -251,19 +280,24 @@ export function CategoryCards() {
 
       <div className="relative z-10 mx-auto max-w-[1536px] px-4 sm:px-6 lg:px-8">
         {/* Section header */}
-        <BlurFade inViewMargin="-80px" className="mb-12 sm:mb-16 lg:mb-20">
-          <span className="inline-block text-[10px] sm:text-[11px] font-semibold tracking-[0.4em] uppercase text-euphoria-aqua/60 mb-4">
-            Disciplines
-          </span>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-tight">
+        <BlurFade inViewMargin="-20px" className="mb-10 sm:mb-12 lg:mb-14">
+          <div className="inline-flex items-center gap-2 px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full border border-euphoria-aqua/45 bg-euphoria-aqua/[0.14] mb-3.5 sm:mb-4 backdrop-blur-sm">
+            <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-euphoria-aqua animate-pulse" />
+            <span className="text-xs sm:text-base lg:text-[17px] font-extrabold tracking-[0.2em] sm:tracking-[0.3em] uppercase text-euphoria-aqua">
+              Events & Disciplines
+            </span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-[1.08]">
             <span className="text-white">Find Your </span>
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-euphoria-gold via-euphoria-purple to-euphoria-aqua">
               Arena
             </span>
           </h2>
-          <p className="mt-5 text-sm sm:text-base text-white/65 max-w-xl leading-relaxed">
-            Four disciplines. Over forty events. One standard-setting program.
-          </p>
+          <div className="mt-3 sm:mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm sm:text-base lg:text-lg leading-relaxed font-normal">
+            <span className="font-semibold text-white/90 tracking-wide">
+              4 Disciplines • 30+ Events
+            </span>
+          </div>
         </BlurFade>
 
         {/* Category rows */}

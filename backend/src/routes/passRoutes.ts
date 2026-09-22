@@ -3,11 +3,19 @@ import {
   getAllPassesHandler,
   getPassBySlugHandler,
   purchasePassHandler,
+  validatePassCouponHandler,
 } from "../controllers/passController";
 import { simulatePassPaymentHandler } from "../controllers/paymentSimulationController";
 import { optionalAuth } from "../middleware/authMiddleware";
 
 const router = Router();
+
+/**
+ * @route   POST /api/passes/validate-coupon
+ * @desc    Validate a Festival Pass coupon for Standup Comedy
+ * @access  Public
+ */
+router.post("/validate-coupon", validatePassCouponHandler);
 
 /**
  * @route   GET /api/passes

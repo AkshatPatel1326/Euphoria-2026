@@ -21,35 +21,35 @@ export function AdminHeader({ onRefresh, isRefreshing = false }: AdminHeaderProp
   const isAdmin = user?.role === "ADMIN";
 
   return (
-    <header className="border-b border-border/60 bg-card/60 backdrop-blur-md sticky top-0 z-30 px-6 py-4">
-      <div className="mx-auto flex max-w-7xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <header className="border-b border-white/[0.08] bg-[#120d24]/90 backdrop-blur-md sticky top-0 z-30 px-4 sm:px-6 py-3.5 shadow-md shadow-black/20">
+      <div className="mx-auto flex max-w-7xl flex-col gap-3.5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shadow-primary/20">
+          <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-euphoria-purple to-euphoria-plum text-white border border-euphoria-purple/40 shadow-sm shadow-euphoria-purple/20">
             <Sparkles className="size-5" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight text-foreground">
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-lg sm:text-xl font-bold tracking-tight text-white">
                 Euphoria Admin Portal
               </h1>
               <Badge
                 variant={isAdmin ? "default" : "secondary"}
-                className={`text-[11px] font-semibold tracking-wide ${
+                className={`text-[11px] font-semibold tracking-wide rounded-full px-2 py-0.5 ${
                   isAdmin
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
+                    ? "bg-euphoria-purple/25 text-euphoria-aqua border border-euphoria-purple/40 shadow-xs"
+                    : "bg-white/[0.08] text-white/80 border border-white/[0.12]"
                 }`}
               >
                 {user?.role || "PORTAL"}
               </Badge>
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Logged in as <span className="font-medium text-foreground">{user?.email}</span>
+            <p className="text-xs text-white/60 mt-0.5">
+              Logged in as <span className="font-medium text-white/90">{user?.email}</span>
             </p>
           </div>
         </div>
 
-        <div className="flex items-center flex-wrap gap-2.5">
+        <div className="flex items-center flex-wrap gap-2">
           {onRefresh && (
             <Button
               type="button"
@@ -57,7 +57,7 @@ export function AdminHeader({ onRefresh, isRefreshing = false }: AdminHeaderProp
               size="sm"
               onClick={onRefresh}
               disabled={isRefreshing}
-              className="gap-1.5 text-xs h-8"
+              className="gap-1.5 text-xs h-8 bg-white/[0.04] border-white/[0.12] text-white/85 hover:bg-white/[0.08] hover:text-white transition-colors"
             >
               <RefreshCw className={`size-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
               Refresh
@@ -69,7 +69,7 @@ export function AdminHeader({ onRefresh, isRefreshing = false }: AdminHeaderProp
             variant="ghost"
             size="sm"
             onClick={() => navigate("/")}
-            className="gap-1.5 text-xs h-8 text-muted-foreground hover:text-foreground"
+            className="gap-1.5 text-xs h-8 text-white/70 hover:text-white hover:bg-white/[0.06] transition-colors"
           >
             <ExternalLink className="size-3.5" />
             Website
@@ -80,7 +80,7 @@ export function AdminHeader({ onRefresh, isRefreshing = false }: AdminHeaderProp
             variant="outline"
             size="sm"
             onClick={handleSignOut}
-            className="gap-1.5 text-xs h-8 text-destructive border-destructive/30 hover:bg-destructive/10"
+            className="gap-1.5 text-xs h-8 text-rose-300 border-rose-500/30 hover:bg-rose-500/15 hover:text-rose-200 transition-colors"
           >
             <LogOut className="size-3.5" />
             Sign out

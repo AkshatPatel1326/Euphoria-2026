@@ -49,7 +49,9 @@ function InputOTPSlot({
       data-slot="input-otp-slot"
       data-active={isActive}
       className={cn(
-        "data-[active=true]:border-ring data-[active=true]:ring-ring/50 data-[active=true]:aria-invalid:ring-destructive/20 dark:data-[active=true]:aria-invalid:ring-destructive/40 aria-invalid:border-destructive data-[active=true]:aria-invalid:border-destructive dark:bg-input/30 border-input relative flex h-9 w-9 items-center justify-center border-y border-r text-sm shadow-xs transition-all outline-none first:rounded-l-md first:border-l last:rounded-r-md data-[active=true]:z-10 data-[active=true]:ring-[3px]",
+        "relative flex h-11 w-10 sm:h-12 sm:w-11 items-center justify-center border border-white/[0.12] bg-white/[0.04] text-base sm:text-lg font-mono font-bold text-white shadow-xs transition-all duration-150 outline-none rounded-xl",
+        "data-[active=true]:border-euphoria-aqua data-[active=true]:ring-2 data-[active=true]:ring-euphoria-aqua/30 data-[active=true]:bg-euphoria-aqua/[0.06] data-[active=true]:z-10",
+        "aria-invalid:border-red-500/50 aria-invalid:ring-1 aria-invalid:ring-red-500/25",
         className
       )}
       {...props}
@@ -57,7 +59,7 @@ function InputOTPSlot({
       {char}
       {hasFakeCaret && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="animate-caret-blink bg-foreground h-4 w-px duration-1000" />
+          <div className="animate-caret-blink bg-euphoria-aqua h-5 w-0.5 rounded-full shadow-[0_0_8px_rgba(62,238,213,0.8)] duration-1000" />
         </div>
       )}
     </div>

@@ -10,13 +10,12 @@ const euphoriaPass = {
   name: "EUPHORIA 2026",
   subtitle: "GENERAL PASS",
   tagline: "Your entry into the celebration.",
-  price: 299 as number | null,
+  price: null as number | null,
   status: "available" as "coming-soon" | "available",
 
   audiences: [
     "SAGE University students",
-    "Students from other colleges",
-    "General public / outsiders",
+    "Students from other colleges / schools",
   ],
   features: [
     "Access to the Euphoria festival experience",
@@ -29,13 +28,13 @@ const euphoriaPass = {
 
 /* ─── Fade-up animation helper ─── */
 const fadeUp = {
-  hidden: { opacity: 0, y: 32 },
+  hidden: { opacity: 0, y: 20 },
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
     transition: {
-      delay: i * 0.12,
-      duration: 0.7,
+      delay: i * 0.08,
+      duration: 0.4,
       ease: [0.22, 0.61, 0.36, 1] as [number, number, number, number],
     },
   }),
@@ -58,9 +57,9 @@ export function Passes() {
             id: p.id,
             name: p.name,
             subtitle: p.subtitle || prev.subtitle,
-            tagline: p.tagline || prev.tagline,
             price: p.price,
             status: p.status === "AVAILABLE" ? "available" : "coming-soon",
+            tagline: p.tagline || prev.tagline,
             features: p.features || prev.features,
             audiences: p.audiences || prev.audiences,
           }));
@@ -69,13 +68,13 @@ export function Passes() {
       .catch(() => {});
   }, []);
 
-  const introInView = useInView(introRef, { once: true, amount: 0.3 });
-  const cardInView = useInView(cardRef, { once: true, amount: 0.2 });
+  const introInView = useInView(introRef, { once: true, amount: 0.2 });
+  const cardInView = useInView(cardRef, { once: true, amount: 0.15 });
 
   return (
     <section
       id="passes"
-      className="relative py-24 sm:py-32 lg:py-40 overflow-hidden"
+      className="relative py-12 sm:py-16 lg:py-20 overflow-hidden"
     >
       {/* ─── Atmospheric background ─── */}
       <div className="absolute inset-0 -z-10">
@@ -97,18 +96,21 @@ export function Passes() {
       {/* ────────────────────────────────────────── */}
       <div
         ref={introRef}
-        className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 text-center mb-16 sm:mb-24"
+        className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 text-center mb-10 sm:mb-14"
       >
         <motion.div
           variants={fadeUp}
           initial="hidden"
           animate={introInView ? "visible" : "hidden"}
           custom={0}
-          className="mb-6"
+          className="mb-4 sm:mb-5"
         >
-          <span className="inline-block text-[10px] sm:text-xs font-medium tracking-[0.3em] uppercase text-euphoria-gold/70">
-            Passes
-          </span>
+          <div className="inline-flex items-center gap-2.5 px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full border border-euphoria-gold/50 bg-euphoria-gold/[0.14] backdrop-blur-sm">
+            <span className="w-2 h-2 rounded-full bg-euphoria-gold animate-pulse" />
+            <span className="text-xs sm:text-base lg:text-[17px] font-extrabold tracking-[0.2em] sm:tracking-[0.3em] uppercase text-euphoria-gold">
+              Passes & Access
+            </span>
+          </div>
         </motion.div>
 
         <motion.h2
@@ -116,15 +118,15 @@ export function Passes() {
           initial="hidden"
           animate={introInView ? "visible" : "hidden"}
           custom={1}
-          className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1]"
+          className="text-2xl min-[380px]:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.08]"
           style={{ fontFamily: "var(--font-heading, inherit)" }}
         >
-          <span className="text-white/90">ONE FESTIVAL.</span>
+          <span className="text-white/90">ONE FESTIVAL</span>
           <br />
-          <span className="text-white/90">ONE PASS.</span>
+          <span className="text-white/90">ONE PASS</span>
           <br />
           <span className="bg-gradient-to-r from-euphoria-gold via-euphoria-purple to-euphoria-aqua bg-clip-text text-transparent">
-            ENDLESS EUPHORIA.
+            ENDLESS EUPHORIA
           </span>
         </motion.h2>
 
@@ -133,7 +135,7 @@ export function Passes() {
           initial="hidden"
           animate={introInView ? "visible" : "hidden"}
           custom={2}
-          className="mt-6 text-sm sm:text-base text-white/60 max-w-lg mx-auto leading-relaxed"
+          className="mt-4 sm:mt-5 text-base sm:text-lg text-white/85 sm:text-white/80 max-w-lg mx-auto leading-relaxed font-normal"
         >
           One pass. Open to everyone.
           <br />
@@ -188,13 +190,13 @@ export function Passes() {
             </div>
 
             {/* Card content */}
-            <div className="px-6 sm:px-10 py-8 sm:py-10 text-center">
+            <div className="px-4 min-[380px]:px-6 sm:px-10 py-8 sm:py-10 text-center">
               <motion.h3
                 variants={fadeUp}
                 initial="hidden"
                 animate={cardInView ? "visible" : "hidden"}
                 custom={2}
-                className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-wider text-white/90 leading-tight mb-2"
+                className="text-2xl min-[380px]:text-3xl sm:text-4xl md:text-5xl font-bold tracking-wider text-white/90 leading-tight mb-2"
                 style={{ fontFamily: "var(--font-heading, inherit)" }}
               >
                 {euphoriaPass.name}
@@ -205,7 +207,7 @@ export function Passes() {
                 initial="hidden"
                 animate={cardInView ? "visible" : "hidden"}
                 custom={3}
-                className="text-sm sm:text-base font-medium tracking-[0.2em] uppercase text-euphoria-gold/70 mb-1"
+                className="text-sm sm:text-base font-medium tracking-[0.2em] uppercase text-euphoria-gold/80 sm:text-euphoria-gold/70 mb-1"
               >
                 {euphoriaPass.subtitle}
               </motion.p>
@@ -215,7 +217,7 @@ export function Passes() {
                 initial="hidden"
                 animate={cardInView ? "visible" : "hidden"}
                 custom={3.5}
-                className="text-sm text-white/55 mb-8"
+                className="text-sm text-white/70 sm:text-white/55 mb-8"
               >
                 {euphoriaPass.tagline}
               </motion.p>
@@ -231,10 +233,10 @@ export function Passes() {
                 {euphoriaPass.audiences.map((audience) => (
                   <span
                     key={audience}
-                    className="flex items-center gap-1.5 text-xs sm:text-sm text-white/50"
+                    className="flex items-center gap-1.5 text-xs sm:text-sm text-white/70 sm:text-white/50"
                   >
-                    <Check className="size-3.5 text-euphoria-aqua/70" />
-                    {audience}
+                    <Check className="size-3.5 text-euphoria-aqua/80 shrink-0" />
+                    <span>{audience}</span>
                   </span>
                 ))}
               </motion.div>
@@ -248,14 +250,14 @@ export function Passes() {
                 initial="hidden"
                 animate={cardInView ? "visible" : "hidden"}
                 custom={5}
-                className="space-y-3 mb-8 max-w-md mx-auto"
+                className="space-y-3 mb-8 max-w-md mx-auto text-left"
               >
                 {euphoriaPass.features.map((feature) => (
                   <li
                     key={feature}
-                    className="flex items-start gap-2.5 text-sm text-white/60"
+                    className="flex items-start gap-2.5 text-sm text-white/75 sm:text-white/65"
                   >
-                    <Check className="size-3.5 mt-0.5 flex-shrink-0 text-euphoria-purple/70" />
+                    <Check className="size-3.5 mt-0.5 flex-shrink-0 text-euphoria-purple/80" />
                     <span>{feature}</span>
                   </li>
                 ))}
@@ -274,12 +276,12 @@ export function Passes() {
                     <span className="text-3xl sm:text-4xl font-black text-euphoria-gold tracking-tight">
                       ₹{passData.price.toLocaleString("en-IN")}
                     </span>
-                    <span className="text-[10px] tracking-[0.2em] uppercase text-white/40 mt-1">
+                    <span className="text-[10px] tracking-[0.2em] uppercase text-white/60 sm:text-white/40 mt-1">
                       All-Inclusive Festival Access
                     </span>
                   </div>
                 ) : (
-                  <span className="text-sm font-medium tracking-wide text-white/45 border border-white/10 rounded-lg px-4 py-2 inline-block">
+                  <span className="text-sm font-medium tracking-wide text-white/60 border border-white/10 rounded-lg px-4 py-2 inline-block">
                     PRICE TO BE ANNOUNCED
                   </span>
                 )}
@@ -295,17 +297,17 @@ export function Passes() {
                 {passData.status === "available" ? (
                   <button
                     onClick={() => setIsPurchaseOpen(true)}
-                    className="w-full sm:w-72 mx-auto py-3.5 sm:py-4 rounded-xl bg-gradient-to-r from-euphoria-gold via-amber-400 to-euphoria-gold text-black text-sm font-bold tracking-wider uppercase border border-white/[0.1] hover:opacity-95 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-euphoria-gold/20 cursor-pointer"
+                    className="w-full sm:w-72 mx-auto py-3.5 sm:py-4 rounded-xl bg-gradient-to-r from-amber-400 via-amber-300 to-amber-400 text-neutral-950 text-sm font-extrabold tracking-wider uppercase border border-amber-300/40 hover:brightness-105 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 focus-visible:ring-offset-euphoria-dark focus-visible:outline-none transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 cursor-pointer"
                   >
-                    <Ticket className="size-4" />
+                    <Ticket className="size-4 text-neutral-950 shrink-0" />
                     Get Festival Pass
                   </button>
                 ) : (
                   <button
                     disabled
-                    className="w-full sm:w-72 mx-auto py-3.5 sm:py-4 rounded-xl bg-gradient-to-r from-euphoria-purple/40 via-euphoria-aqua/30 to-euphoria-gold/30 text-white/50 text-sm font-semibold tracking-wider uppercase cursor-not-allowed border border-white/[0.06] transition-all duration-300 flex items-center justify-center gap-2"
+                    className="w-full sm:w-72 mx-auto py-3.5 sm:py-4 rounded-xl bg-white/[0.06] text-white/50 text-sm font-semibold tracking-wider uppercase cursor-not-allowed border border-white/[0.08] transition-all duration-300 flex items-center justify-center gap-2"
                   >
-                    <Lock className="size-3.5" />
+                    <Lock className="size-3.5 text-white/50 shrink-0" />
                     Coming Soon
                   </button>
                 )}
@@ -314,79 +316,6 @@ export function Passes() {
 
             {/* Bottom accent bar */}
             <div className="h-px w-full bg-gradient-to-r from-transparent via-euphoria-gold/20 to-transparent" />
-          </div>
-        </motion.div>
-      </div>
-
-      {/* ────────────────────────────────────────── */}
-      {/* PART 3 — PRO NIGHT / ARTIST TEASER         */}
-      {/* ────────────────────────────────────────── */}
-      <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          animate={cardInView ? "visible" : "hidden"}
-          custom={8}
-          className="relative rounded-2xl overflow-hidden"
-        >
-          {/* Stage backdrop */}
-          <div className="absolute inset-0 bg-gradient-to-b from-euphoria-dark via-[#0d0816] to-euphoria-dark" />
-
-          {/* Animated stage light beams */}
-          <div className="absolute inset-0 overflow-hidden">
-            <motion.div
-              animate={{ opacity: [0.06, 0.15, 0.06], rotate: [-2, 2, -2] }}
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute -top-10 left-1/2 -translate-x-1/2 w-[1.5px] h-[250%] bg-gradient-to-b from-euphoria-purple/50 via-euphoria-purple/15 to-transparent"
-              style={{ transformOrigin: "top center" }}
-            />
-            <motion.div
-              animate={{ opacity: [0.05, 0.12, 0.05], rotate: [3, -1, 3] }}
-              transition={{
-                duration: 8,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: 1,
-              }}
-              className="absolute -top-10 left-[38%] w-[1.5px] h-[250%] bg-gradient-to-b from-euphoria-aqua/35 via-euphoria-aqua/10 to-transparent"
-              style={{ transformOrigin: "top center" }}
-            />
-            <motion.div
-              animate={{ opacity: [0.04, 0.10, 0.04], rotate: [-3, 1, -3] }}
-              transition={{
-                duration: 7,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: 2,
-              }}
-              className="absolute -top-10 left-[62%] w-[1.5px] h-[250%] bg-gradient-to-b from-euphoria-gold/25 via-euphoria-gold/08 to-transparent"
-              style={{ transformOrigin: "top center" }}
-            />
-          </div>
-
-          <div className="relative z-10 px-6 py-10 sm:px-10 sm:py-14 text-center">
-            <p className="text-[10px] sm:text-xs tracking-[0.35em] uppercase text-euphoria-purple/70 mb-4">
-              Pro Night
-            </p>
-            <p
-              className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-white/80 leading-snug mb-2"
-              style={{ fontFamily: "var(--font-heading, inherit)" }}
-            >
-              YOUR NIGHT.
-              <br />
-              <span className="bg-gradient-to-r from-euphoria-purple via-euphoria-aqua to-euphoria-gold bg-clip-text text-transparent">
-                A NEW HEADLINER.
-              </span>
-            </p>
-            <p className="text-xs sm:text-sm text-white/45 tracking-wide">
-              Artist reveal — coming soon.
-            </p>
-            {/* Pulsing indicator */}
-            <motion.div
-              animate={{ opacity: [0.25, 0.6, 0.25] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-              className="mt-5 mx-auto w-12 h-px bg-gradient-to-r from-transparent via-euphoria-gold/40 to-transparent"
-            />
           </div>
         </motion.div>
       </div>

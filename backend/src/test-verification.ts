@@ -295,8 +295,10 @@ async function runTests() {
         },
         scholarNumber: "21BT01001",
         enrollmentNumber: "SU21001",
+        institute: "Institute of Advanced Computing",
         course: "B.Tech CSE",
         year: "3rd Year",
+        semester: "5th Semester",
         paymentMethod: "upi", // frontend payment method
       },
     });
@@ -342,8 +344,8 @@ async function runTests() {
 
     // ── TEST 4: Group Registration & Team Size Validation ──
     console.log("\n[TEST 4] Group Registration & Team Size Validation (Min: 2, Max: 4)");
-    // Under minimum: leader only (0 extra members, total size = 1)
-    const underRes = await request("/api/registrations", {
+    // Missing teamName for group event should be rejected
+    const missingTeamNameRes = await request("/api/registrations", {
       method: "POST",
       token: part1Token,
       body: {
@@ -352,16 +354,15 @@ async function runTests() {
         fullName: "Aarav Patel",
         email: "aarav.patel@test.com",
         phone: "9876543210",
-        teamName: "Solo Not Allowed",
-        teamMembers: [],
+        teamName: "",
       },
     });
-    console.log("Under-size team registration status:", underRes.status);
-    if (underRes.status !== 400) {
-      throw new Error("FAILED: Team size under minTeamSize should be rejected");
+    console.log("Missing teamName registration status:", missingTeamNameRes.status);
+    if (missingTeamNameRes.status !== 400) {
+      throw new Error("FAILED: Group registration without teamName should be rejected");
     }
 
-    // Over maximum: leader + 4 members (total size = 5)
+    // Over maximum: leader + 4 members (total size = 5, max = 4)
     const overRes = await request("/api/registrations", {
       method: "POST",
       token: part1Token,
@@ -385,7 +386,7 @@ async function runTests() {
       throw new Error("FAILED: Team size over maxTeamSize should be rejected");
     }
 
-    // Valid group: Leader + 2 members = 3 members total (within 2-4)
+    // Valid group: Leader + teamName (no additional members required)
     const validGroupRes = await request("/api/registrations", {
       method: "POST",
       token: part1Token,
@@ -401,20 +402,6 @@ async function runTests() {
         course: "BBA",
         year: "2nd Year",
         teamName: "Euphoria Beats",
-        teamMembers: [
-          {
-            fullName: "Rohan Verma",
-            email: "rohan@test.com",
-            phone: "9876543211",
-            collegeName: "Indore Institute of Tech",
-          },
-          {
-            fullName: "Simran Kaur",
-            email: "simran@test.com",
-            phone: "9876543212",
-            collegeName: "Indore Institute of Tech",
-          },
-        ],
       },
     });
     console.log("Valid group registration status:", validGroupRes.status);
@@ -425,14 +412,14 @@ async function runTests() {
     }
     const groupRegData = validGroupRes.data.data.registration;
     console.log(
-      `Group Team Name: ${groupRegData.team?.name}, Members Count: ${groupRegData.team?.members?.length}`
+      `Group Team Name: ${groupRegData.team?.name}, Leader: ${groupRegData.team?.leaderName}`
     );
     if (
       !groupRegData.team ||
       groupRegData.team.name !== "Euphoria Beats" ||
-      groupRegData.team.members.length !== 2
+      groupRegData.team.leaderName !== "Aarav Patel"
     ) {
-      throw new Error("FAILED: Team and TeamMember records were not created correctly");
+      throw new Error("FAILED: Team record was not created correctly");
     }
     console.log("✓ TEST 4 PASSED: Group registration and team validation verified.");
 
@@ -544,6 +531,10 @@ async function runTests() {
           email: "free@test.com",
           phone: "9876543210",
         },
+        scholarNumber: "21BT09999",
+        enrollmentNumber: "SU21999",
+        institute: "Institute of Engineering and Technology",
+        year: "1st Year",
       },
     });
     console.log("Free event registration status:", freeRegRes.status);

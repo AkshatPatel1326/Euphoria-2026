@@ -99,13 +99,13 @@ function GradientDivider() {
 /* ── Main Sponsors Section ─────────────────────────────────── */
 export function Sponsors() {
   const sectionRef = useRef<HTMLElement>(null);
-  const inView = useInView(sectionRef, { once: true, margin: "-100px" });
+  const inView = useInView(sectionRef, { once: true, margin: "-20px" });
 
   return (
     <section
       id="sponsors"
       ref={sectionRef}
-      className="relative py-20 sm:py-28 lg:py-36 overflow-hidden"
+      className="relative py-12 sm:py-16 lg:py-20 overflow-hidden"
     >
       <SponsorBackground />
 
@@ -113,21 +113,24 @@ export function Sponsors() {
         <GradientDivider />
 
         {/* ── Editorial heading ─────────────────────────────── */}
-        <BlurFade inViewMargin="-80px" className="text-center mb-16 sm:mb-20">
-          <span className="inline-block text-[10px] sm:text-[11px] font-semibold tracking-[0.5em] uppercase text-euphoria-gold/55 mb-5">
-            Acknowledgements
-          </span>
+        <BlurFade inViewMargin="-20px" className="text-center mb-8 sm:mb-10">
+          <div className="inline-flex items-center gap-2.5 px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full border border-euphoria-gold/50 bg-euphoria-gold/[0.14] mb-4 backdrop-blur-sm">
+            <span className="w-2 h-2 rounded-full bg-euphoria-gold animate-pulse" />
+            <span className="text-xs sm:text-base lg:text-[17px] font-extrabold tracking-[0.18em] sm:tracking-[0.3em] uppercase text-euphoria-gold">
+              Partners & Sponsors
+            </span>
+          </div>
           <h2
             className="font-black tracking-tight leading-[0.9]"
             style={{ fontSize: "clamp(2rem, 5vw, 4rem)" }}
           >
-            <span className="block text-white/85">THE</span>
-            <span className="block text-white/85">FORCE BEHIND</span>
+            <span className="block text-white/90">THE</span>
+            <span className="block text-white/90">FORCE BEHIND</span>
             <span className="block bg-clip-text text-transparent bg-gradient-to-r from-euphoria-gold via-euphoria-purple to-euphoria-aqua">
               EUPHORIA
             </span>
           </h2>
-          <p className="mt-6 text-xs sm:text-sm text-white/55 max-w-md mx-auto leading-relaxed">
+          <p className="mt-4 sm:mt-5 text-sm sm:text-base text-white/80 sm:text-white/75 max-w-md mx-auto leading-relaxed font-normal">
             Every great festival is powered by the belief of its partners.
             <br />
             These are the names that made Euphoria possible.
@@ -135,7 +138,7 @@ export function Sponsors() {
         </BlurFade>
 
         {/* ── Featured sponsors — prominent presentation ─────── */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-12 mb-20">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-12 mb-14 sm:mb-16">
           {featuredSponsors.map((sponsor, i) => (
             <BlurFade
               key={sponsor.label}
@@ -146,19 +149,19 @@ export function Sponsors() {
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full border border-white/[0.06] bg-white/[0.02] p-2.5 flex items-center justify-center transition-all duration-500 group-hover:border-euphoria-gold/20 group-hover:bg-white/[0.04] group-hover:shadow-[0_0_40px_rgba(175,153,71,0.08)]"
+                className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full border border-white/[0.08] bg-white/[0.03] p-2.5 flex items-center justify-center transition-all duration-500 group-hover:border-euphoria-gold/30 group-hover:bg-white/[0.05] group-hover:shadow-[0_0_40px_rgba(175,153,71,0.12)]"
               >
                 <img
                   src={sponsor.src}
                   alt={sponsor.label}
-                  className="w-full h-full object-contain transition-all duration-500 opacity-70 group-hover:opacity-100"
+                  className="w-full h-full object-contain transition-all duration-500 opacity-85 group-hover:opacity-100"
                 />
               </motion.div>
               <div className="text-center">
-                <p className="text-[10px] sm:text-xs font-semibold tracking-[0.2em] uppercase text-white/60 group-hover:text-white/80 transition-colors duration-300">
+                <p className="text-[10px] sm:text-xs font-semibold tracking-[0.2em] uppercase text-white/80 sm:text-white/65 group-hover:text-white transition-colors duration-300">
                   {sponsor.label}
                 </p>
-                <p className="text-[9px] sm:text-[10px] text-white/40 tracking-wider mt-1">
+                <p className="text-[9px] sm:text-[10px] text-white/60 sm:text-white/45 tracking-wider mt-1">
                   {sponsor.sublabel}
                 </p>
               </div>
@@ -168,11 +171,11 @@ export function Sponsors() {
 
         {/* ── Divider line ─────────────────────────────────── */}
         <div className="flex items-center justify-center gap-4 mb-14">
-          <div className="h-px flex-1 max-w-[120px] bg-gradient-to-r from-transparent to-white/[0.06]" />
-          <span className="text-[9px] tracking-[0.35em] uppercase text-white/40">
+          <div className="h-px flex-1 max-w-[120px] bg-gradient-to-r from-transparent to-white/[0.08]" />
+          <span className="text-[9px] tracking-[0.25em] sm:tracking-[0.35em] uppercase text-white/65 sm:text-white/45 font-medium">
             Past Sponsors &amp; Partners
           </span>
-          <div className="h-px flex-1 max-w-[120px] bg-gradient-to-l from-transparent to-white/[0.06]" />
+          <div className="h-px flex-1 max-w-[120px] bg-gradient-to-l from-transparent to-white/[0.08]" />
         </div>
 
         {/* ── Sponsor logo grid — staggered reveal ──────────── */}
@@ -187,12 +190,12 @@ export function Sponsors() {
               <motion.div
                 whileHover={{ scale: 1.06, y: -2 }}
                 transition={{ duration: 0.25, ease: "easeOut" }}
-                className="group flex items-center justify-center aspect-square rounded-xl border border-white/[0.03] bg-white/[0.01] p-2.5 transition-all duration-400 hover:border-euphoria-gold/12 hover:bg-white/[0.03] hover:shadow-[0_0_20px_rgba(175,153,71,0.05)]"
+                className="group flex items-center justify-center aspect-square rounded-xl border border-white/[0.05] bg-white/[0.02] p-2.5 transition-all duration-400 hover:border-euphoria-gold/20 hover:bg-white/[0.04] hover:shadow-[0_0_20px_rgba(175,153,71,0.08)]"
               >
                 <img
                   src={logo.src}
                   alt={logo.alt}
-                  className="w-full h-full object-contain opacity-50 group-hover:opacity-85 transition-opacity duration-300"
+                  className="w-full h-full object-contain opacity-70 group-hover:opacity-100 transition-opacity duration-300"
                   loading="lazy"
                 />
               </motion.div>
@@ -201,24 +204,24 @@ export function Sponsors() {
         </div>
 
         {/* ── Pro Night tease ──────────────────────────────── */}
-        <BlurFade delay={0.6} inViewMargin="-60px" className="text-center mt-16">
+        <BlurFade delay={0.6} inViewMargin="-60px" className="text-center mt-14 sm:mt-16">
           <div className="flex items-center justify-center gap-3 mb-3">
-            <div className="h-px w-8 bg-euphoria-purple/20" />
-            <span className="text-[9px] sm:text-[10px] font-semibold tracking-[0.5em] uppercase text-euphoria-purple/50">
+            <div className="h-px w-8 bg-euphoria-purple/30" />
+            <span className="text-[9px] sm:text-[10px] font-semibold tracking-[0.4em] sm:tracking-[0.5em] uppercase text-euphoria-purple/70">
               Pro Night
             </span>
-            <div className="h-px w-8 bg-euphoria-purple/20" />
+            <div className="h-px w-8 bg-euphoria-purple/30" />
           </div>
-          <p className="text-[10px] sm:text-[11px] text-white/40 tracking-wider">
+          <p className="text-[10px] sm:text-[11px] text-white/55 sm:text-white/45 tracking-wider">
             Headliner artist to be announced
           </p>
         </BlurFade>
 
-        {/* ── Partnership inquiry ──────────────────────────── */}
+        {/* ── Partnership inquiry ──────────────────── */}
         <BlurFade delay={0.7} inViewMargin="-60px" className="text-center mt-8">
-          <p className="text-[9px] sm:text-[10px] text-white/40 tracking-[0.2em]">
+          <p className="text-[10px] sm:text-[11px] text-white/65 sm:text-white/50 tracking-[0.14em] sm:tracking-[0.2em] px-4 leading-relaxed">
             For partnership inquiries:{" "}
-            <span className="text-euphoria-gold/55">sponsorship@sageuniversity.in</span>
+            <span className="text-euphoria-gold/85 font-semibold break-all sm:break-normal">sponsorship@sageuniversity.in</span>
           </p>
         </BlurFade>
       </div>

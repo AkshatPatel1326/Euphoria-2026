@@ -78,35 +78,42 @@ export class EasebuzzService {
   /**
    * Verifies SHA-512 response hash using official Easebuzz reverse hash formula:
    * salt|status|udf10|udf9|udf8|udf7|udf6|udf5|udf4|udf3|udf2|udf1|email|firstname|productinfo|amount|txnid|key
+   *
+   * Strict adherence to official specification:
+   * Uses exact raw callback values without trimming, normalizing whitespace/casing, or reformatting.
+   * Compares with received hash using secure constant-time timingSafeEqual.
    */
   public static verifyResponseHash(
     body: Record<string, any>,
     salt: string
   ): boolean {
-    const receivedHash = (body.hash || "").trim().toLowerCase();
+    const rawHash = body.hash != null ? String(body.hash) : "";
+    const receivedHash = rawHash.trim().toLowerCase();
     if (!receivedHash || receivedHash.length !== 128) {
       return false;
     }
 
+    const cleanSalt = salt.trim();
+
     const sequence = [
-      salt.trim(),
-      (body.status || "").trim(),
-      (body.udf10 || "").trim(),
-      (body.udf9 || "").trim(),
-      (body.udf8 || "").trim(),
-      (body.udf7 || "").trim(),
-      (body.udf6 || "").trim(),
-      (body.udf5 || "").trim(),
-      (body.udf4 || "").trim(),
-      (body.udf3 || "").trim(),
-      (body.udf2 || "").trim(),
-      (body.udf1 || "").trim(),
-      (body.email || "").trim(),
-      (body.firstname || "").trim(),
-      (body.productinfo || "").trim(),
-      (body.amount || "").trim(),
-      (body.txnid || "").trim(),
-      (body.key || "").trim(),
+      cleanSalt,
+      body.status != null ? String(body.status) : "",
+      body.udf10 != null ? String(body.udf10) : "",
+      body.udf9 != null ? String(body.udf9) : "",
+      body.udf8 != null ? String(body.udf8) : "",
+      body.udf7 != null ? String(body.udf7) : "",
+      body.udf6 != null ? String(body.udf6) : "",
+      body.udf5 != null ? String(body.udf5) : "",
+      body.udf4 != null ? String(body.udf4) : "",
+      body.udf3 != null ? String(body.udf3) : "",
+      body.udf2 != null ? String(body.udf2) : "",
+      body.udf1 != null ? String(body.udf1) : "",
+      body.email != null ? String(body.email) : "",
+      body.firstname != null ? String(body.firstname) : "",
+      body.productinfo != null ? String(body.productinfo) : "",
+      body.amount != null ? String(body.amount) : "",
+      body.txnid != null ? String(body.txnid) : "",
+      body.key != null ? String(body.key) : "",
     ];
 
     const reverseHashString = sequence.join("|");
@@ -123,6 +130,100 @@ export class EasebuzzService {
       );
     } catch {
       return false;
+    }
+  }
+
+  /**
+   * Performs server-side transaction status verification using Easebuzz Transaction V2 API:
+   * Endpoint:
+   *   Production: https://dashboard.easebuzz.in/transaction/v2/retrieve
+   *   Test: https://testdashboard.easebuzz.in/transaction/v2/retrieve
+   * Verification Hash: sha512(key|txnid|salt)
+   */
+  public static async verifyTransactionServerSide(
+    txnid: string
+  ): Promise<{
+    verified: boolean;
+    status: string;
+    amount: number;
+    easepayid: string | null;
+    rawResponse?: Record<string, any>;
+    errorMessage?: string;
+  }> {
+    const key = process.env.EASEBUZZ_KEY?.trim();
+    const salt = process.env.EASEBUZZ_SALT?.trim();
+    const isProd = (process.env.EASEBUZZ_ENV || "prod").toLowerCase() === "prod";
+
+    if (!key || !salt) {
+      throw new HttpError("Server configuration error: Easebuzz credentials are not configured.", 500);
+    }
+
+    const endpoint = isProd
+      ? "https://dashboard.easebuzz.in/transaction/v2/retrieve"
+      : "https://testdashboard.easebuzz.in/transaction/v2/retrieve";
+
+    const hashString = `${key}|${txnid.trim()}|${salt}`;
+    const hash = crypto.createHash("sha512").update(hashString).digest("hex").toLowerCase();
+
+    const formData = new URLSearchParams({
+      key,
+      txnid: txnid.trim(),
+      hash,
+    });
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+        },
+        body: formData.toString(),
+      });
+
+      if (!response.ok) {
+        return {
+          verified: false,
+          status: "HTTP_ERROR",
+          amount: 0,
+          easepayid: null,
+          errorMessage: `Easebuzz S2S returned HTTP ${response.status}`,
+        };
+      }
+
+      const data: any = await response.json();
+
+      if (data && data.status === true && data.msg) {
+        const msg = data.msg;
+        const s2sStatus = (msg.status || "").toLowerCase().trim();
+        const s2sAmount = parseFloat(msg.amount) || 0;
+        const easepayid = msg.easepayid || null;
+
+        return {
+          verified: true,
+          status: s2sStatus,
+          amount: s2sAmount,
+          easepayid,
+          rawResponse: msg,
+        };
+      }
+
+      return {
+        verified: false,
+        status: "GATEWAY_ERROR",
+        amount: 0,
+        easepayid: null,
+        errorMessage: data?.error_desc || data?.msg || "Transaction retrieval returned falsy status",
+      };
+    } catch (err: any) {
+      console.error("[EasebuzzService] Network error during S2S transaction verification:", err?.message);
+      return {
+        verified: false,
+        status: "NETWORK_ERROR",
+        amount: 0,
+        easepayid: null,
+        errorMessage: err?.message || "Failed to communicate with Easebuzz S2S API",
+      };
     }
   }
 
@@ -198,11 +299,12 @@ export class EasebuzzService {
         throw new HttpError("This registration is already confirmed and paid", 400);
       }
 
-      if (reg.event.fee <= 0) {
+      // Backend authoritative amount (e.g. ₹49 for Standup Comedy with Festival Pass, or full fee)
+      amount = reg.payment?.amount ?? (reg.discountAmount ? Math.max(0, reg.event.fee - reg.discountAmount) : reg.event.fee);
+
+      if (amount <= 0) {
         throw new HttpError("This event is free and does not require payment", 400);
       }
-
-      amount = reg.event.fee;
       fullName = reg.fullName;
       email = reg.email;
       phone = reg.phone;
@@ -276,6 +378,8 @@ export class EasebuzzService {
           mode: "SIMULATION",
           txnid: simResult.payment.transactionId || `SIM_${Date.now()}`,
           amount,
+          registrationStatus: simResult.registrationStatus,
+          payment: { id: simResult.payment.id, status: simResult.payment.status },
           simulationResult: simResult,
         };
       } else {
@@ -289,6 +393,8 @@ export class EasebuzzService {
           mode: "SIMULATION",
           txnid: simResult.payment?.transactionId || `SIM_PASS_${Date.now()}`,
           amount,
+          passPurchaseStatus: simResult.status,
+          payment: simResult.payment ? { id: simResult.payment.id, status: simResult.payment.status } : undefined,
           simulationResult: simResult,
         };
       }
@@ -308,15 +414,15 @@ export class EasebuzzService {
       );
     }
 
-    const initiateEndpoint =
-      envMode === "prod"
-        ? "https://pay.easebuzz.in/payment/initiateLink"
-        : "https://testpay.easebuzz.in/payment/initiateLink";
+    const isProd = envMode === "prod" || envMode === "production";
 
-    const checkoutBase =
-      envMode === "prod"
-        ? "https://pay.easebuzz.in/pay/"
-        : "https://testpay.easebuzz.in/pay/";
+    const initiateEndpoint = isProd
+      ? "https://pay.easebuzz.in/payment/initiateLink"
+      : "https://testpay.easebuzz.in/payment/initiateLink";
+
+    const checkoutBase = isProd
+      ? "https://pay.easebuzz.in/pay/"
+      : "https://testpay.easebuzz.in/pay/";
 
     const backendBaseUrl = process.env.APP_BACKEND_URL || "http://localhost:5000";
 
@@ -337,6 +443,7 @@ export class EasebuzzService {
         await tx.payment.update({
           where: { id: existingPayment.id },
           data: {
+            amount,
             status: PaymentStatus.PENDING,
             transactionId: txnid,
             gatewayReference: null,
@@ -387,12 +494,19 @@ export class EasebuzzService {
       .replace(/[^a-zA-Z]/g, "")
       .slice(0, 50) || "Participant";
     const cleanPhone = phone.replace(/\D/g, "").slice(-10) || "9999999999";
-    const cleanProductInfo = productInfo
+    // Truncate to maximum 40 characters, clean whitespace, and trim to prevent trailing spaces
+    let cleanProductInfo = productInfo
       .replace(/[—–]/g, "-")
       .replace(/[^a-zA-Z0-9\s_-]/g, "")
       .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 50) || "Euphoria 2026";
+      .trim();
+
+    if (cleanProductInfo.length > 40) {
+      cleanProductInfo = cleanProductInfo.slice(0, 40).trim();
+    }
+    if (!cleanProductInfo) {
+      cleanProductInfo = "Euphoria 2026";
+    }
 
     const hash = this.generateInitiateHash({
       key,
@@ -458,7 +572,7 @@ export class EasebuzzService {
 
   /**
    * Handles Easebuzz browser callback or S2S webhook response.
-   * Fully validates reverse hash, amounts, and performs idempotent reconciliation.
+   * Fully validates reverse hash, amounts, S2S gateway status, and performs idempotent reconciliation.
    */
   public static async handlePaymentCallback(
     body: Record<string, any>
@@ -469,19 +583,31 @@ export class EasebuzzService {
     targetId: string;
     redirectUrl: string;
   }> {
-    const salt = process.env.EASEBUZZ_SALT;
+    const salt = process.env.EASEBUZZ_SALT?.trim();
     if (!salt) {
       throw new HttpError("Server configuration error: EASEBUZZ_SALT is not set.", 500);
     }
 
-    // 1. Verify Reverse Hash
+    const txnid = (body.txnid != null ? String(body.txnid) : "").trim();
+    const incomingStatus = (body.status != null ? String(body.status) : "").toLowerCase().trim();
+    const easepayid = body.easepayid != null ? String(body.easepayid).trim() : null;
+
+    // Safe diagnostic log: Callback received (No secrets/salts)
+    console.log(
+      `[EasebuzzService] Payment callback received: txnid=${txnid || "missing"}, status=${incomingStatus || "missing"}, easepayid=${easepayid || "none"}, amount=${body.amount ?? "none"}`
+    );
+
+    // 1. Strict Reverse Hash Verification (Exact raw callback fields per official specification)
     const isValidSignature = this.verifyResponseHash(body, salt);
+    console.log(
+      `[EasebuzzService] Reverse hash signature verification: ${isValidSignature ? "PASSED" : "FAILED"} for txnid=${txnid || "unknown"}`
+    );
+
     if (!isValidSignature) {
-      console.error("[EasebuzzService] SECURITY ALERT: Reverse hash mismatch for txnid:", body.txnid);
+      console.error("[EasebuzzService] Security error: Reverse hash signature verification failed for txnid:", txnid || "unknown");
       throw new HttpError("Payment callback signature verification failed.", 400);
     }
 
-    const txnid = (body.txnid || "").trim();
     if (!txnid) {
       throw new HttpError("Missing txnid in payment callback.", 400);
     }
@@ -490,8 +616,18 @@ export class EasebuzzService {
     const payment = await prisma.payment.findUnique({
       where: { transactionId: txnid },
       include: {
-        registration: { include: { event: true } },
-        passPurchase: { include: { pass: true } },
+        registration: {
+          include: {
+            event: { include: { category: true } },
+            team: { include: { members: true } },
+          },
+        },
+        passPurchase: {
+          include: {
+            pass: true,
+            holders: { orderBy: { holderIndex: "asc" } },
+          },
+        },
       },
     });
 
@@ -508,20 +644,29 @@ export class EasebuzzService {
     const incomingAmount = parseFloat(body.amount);
     if (isNaN(incomingAmount) || Math.abs(incomingAmount - payment.amount) > 0.01) {
       console.error(
-        "[EasebuzzService] Amount mismatch! Stored:",
-        payment.amount,
-        "Received:",
-        body.amount
+        `[EasebuzzService] Amount mismatch for txnid ${txnid}! Stored: ${payment.amount}, Received: ${body.amount}`
       );
       throw new HttpError("Payment amount mismatch detected.", 400);
     }
+    console.log(`[EasebuzzService] Local amount comparison: PASSED (stored=${payment.amount}, received=${incomingAmount}) for txnid=${txnid}`);
 
-    // 4. Idempotency Guard: if already SUCCESS, don't duplicate mutations or emails
+    // 4. Target Ownership Check
+    if (body.udf1 && body.udf1 !== (payment.registrationId ? "REGISTRATION" : "PASS")) {
+      console.error(`[EasebuzzService] Target type mismatch for txnid ${txnid}! Stored: ${payment.registrationId ? "REGISTRATION" : "PASS"}, Received: ${body.udf1}`);
+      throw new HttpError("Payment target type mismatch detected.", 400);
+    }
+    if (body.udf2 && body.udf2 !== (payment.registrationId || payment.passPurchaseId)) {
+      console.error(`[EasebuzzService] Target ID mismatch for txnid ${txnid}! Stored: ${payment.registrationId || payment.passPurchaseId}, Received: ${body.udf2}`);
+      throw new HttpError("Payment target ID mismatch detected.", 400);
+    }
+
+    // 5. Idempotency Guard: if already SUCCESS, don't duplicate mutations or emails
     const registrationNumber = payment.registration?.registrationNumber;
     const passNumber = payment.passPurchase?.passNumber;
     const identifier = registrationNumber || passNumber || "";
 
     if (payment.status === PaymentStatus.SUCCESS) {
+      console.log(`[EasebuzzService] Transaction ${txnid} is already marked SUCCESS. Returning existing result idempotently.`);
       return {
         status: "success",
         txnid,
@@ -531,20 +676,44 @@ export class EasebuzzService {
       };
     }
 
-    // 5. Reconcile Status Atomically
-    const easebuzzStatus = (body.status || "").toLowerCase().trim();
-    const isSuccess = easebuzzStatus === "success";
-    const isCancelled = easebuzzStatus === "usercancelled";
-    const easepayid = body.easepayid || null;
+    // 6. Reconcile Status
+    const isSuccess = incomingStatus === "success";
+    const isCancelled = incomingStatus === "usercancelled";
     const mode = parsePaymentMode(body.mode);
 
     if (isSuccess) {
+      // 7. Server-Side Transaction Verification via Easebuzz Transaction V2 API
+      const s2sVerification = await this.verifyTransactionServerSide(txnid);
+      console.log(
+        `[EasebuzzService] Server-side S2S transaction verification: ${s2sVerification.verified ? "SUCCESS" : "FAILED"} (gateway status: ${s2sVerification.status}, amount: ${s2sVerification.amount}) for txnid=${txnid}`
+      );
+
+      if (!s2sVerification.verified || s2sVerification.status !== "success") {
+        console.error(
+          `[EasebuzzService] S2S verification failed for txnid ${txnid}: ${s2sVerification.errorMessage || "gateway reported status is not success"}`
+        );
+        throw new HttpError(
+          `Server-side transaction verification failed: ${s2sVerification.errorMessage || "gateway status not success"}`,
+          400
+        );
+      }
+
+      if (Math.abs(s2sVerification.amount - payment.amount) > 0.01) {
+        console.error(
+          `[EasebuzzService] S2S verification amount mismatch for txnid ${txnid}: stored=${payment.amount}, gateway=${s2sVerification.amount}`
+        );
+        throw new HttpError("Server-side transaction verification failed: gateway amount mismatch.", 400);
+      }
+
+      // 8. Atomic Database Update (Payment SUCCESS & Registration/Pass CONFIRMED)
+      const confirmedGatewayReference = easepayid || s2sVerification.easepayid;
+
       await prisma.$transaction(async (tx) => {
         await tx.payment.update({
           where: { id: payment.id },
           data: {
             status: PaymentStatus.SUCCESS,
-            gatewayReference: easepayid,
+            gatewayReference: confirmedGatewayReference,
             method: mode,
             paidAt: new Date(),
             gatewayResponse: body,
@@ -563,12 +732,75 @@ export class EasebuzzService {
           });
         }
       });
+      console.log(`[EasebuzzService] Database confirmation: Payment marked SUCCESS, order confirmed for txnid=${txnid}`);
 
-      // Dispatch confirmation email in background
-      if (payment.registration) {
-        emailService.sendRegistrationConfirmation(payment.registration.email, payment.registration);
-      } else if (payment.passPurchase) {
-        emailService.sendPassConfirmation(payment.passPurchase.email, payment.passPurchase);
+      // 9. Email State Handling (Section 9 & 12)
+      // Attempt email ONLY after payment confirmation in DB.
+      // Mark confirmationEmailSent = true ONLY if the email dispatch actually succeeds.
+      const isEmailAlreadySent = Boolean(
+        payment.registration?.confirmationEmailSent ?? payment.passPurchase?.confirmationEmailSent
+      );
+
+      if (!isEmailAlreadySent) {
+        if (payment.registration) {
+          try {
+            await emailService.sendRegistrationConfirmation(payment.registration.email, {
+              ...payment.registration,
+              payment: {
+                amount: payment.amount,
+                status: "SUCCESS",
+                transactionId: txnid,
+                gatewayReference: confirmedGatewayReference,
+                method: mode,
+              },
+            });
+
+            await prisma.registration.update({
+              where: { id: payment.registration.id },
+              data: {
+                confirmationEmailSent: true,
+                confirmationEmailSentAt: new Date(),
+              },
+            });
+            console.log(`[EasebuzzService] Registration confirmation email: SUCCESS for txnid=${txnid}`);
+          } catch (err: any) {
+            // Non-fatal for payment: log error, leave confirmationEmailSent false so it remains retryable
+            console.error(
+              `[EasebuzzService] Non-fatal: Registration confirmation email delivery failed for txnid=${txnid}:`,
+              err?.message
+            );
+          }
+        } else if (payment.passPurchase) {
+          try {
+            await emailService.sendPassConfirmation(payment.passPurchase.email, {
+              ...payment.passPurchase,
+              payment: {
+                amount: payment.amount,
+                status: "SUCCESS",
+                transactionId: txnid,
+                gatewayReference: confirmedGatewayReference,
+                method: mode,
+              },
+            });
+
+            await prisma.passPurchase.update({
+              where: { id: payment.passPurchase.id },
+              data: {
+                confirmationEmailSent: true,
+                confirmationEmailSentAt: new Date(),
+              },
+            });
+            console.log(`[EasebuzzService] Pass confirmation email: SUCCESS for txnid=${txnid}`);
+          } catch (err: any) {
+            // Non-fatal for payment: log error, leave confirmationEmailSent false so it remains retryable
+            console.error(
+              `[EasebuzzService] Non-fatal: Pass purchase confirmation email delivery failed for txnid=${txnid}:`,
+              err?.message
+            );
+          }
+        }
+      } else {
+        console.log(`[EasebuzzService] Confirmation email already previously sent for txnid=${txnid}. Skipping duplicate.`);
       }
 
       return {
@@ -590,7 +822,7 @@ export class EasebuzzService {
         },
       });
 
-      // Registration/Pass remains PENDING to permit retry
+      console.log(`[EasebuzzService] Payment marked ${finalPaymentStatus} for txnid=${txnid}`);
       const resultStatus = isCancelled ? "cancelled" : "failed";
       return {
         status: resultStatus,

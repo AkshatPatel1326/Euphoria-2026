@@ -21,6 +21,9 @@ import {
   XCircle,
   Ban,
   Trash2,
+  Calendar,
+  BookOpen,
+  Users,
 } from "lucide-react";
 
 interface PassPurchaseDetailModalProps {
@@ -46,30 +49,30 @@ export function PassPurchaseDetailModal({
     switch (status) {
       case "CONFIRMED":
         return (
-          <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20 gap-1">
+          <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30 gap-1 text-[11px] font-semibold">
             <CheckCircle className="size-3" /> Confirmed
           </Badge>
         );
       case "PENDING":
         return (
-          <Badge className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20 gap-1">
+          <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/30 gap-1 text-[11px] font-semibold">
             <Clock className="size-3" /> Pending
           </Badge>
         );
       case "CANCELLED":
         return (
-          <Badge className="bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20 gap-1">
+          <Badge className="bg-rose-500/15 text-rose-300 border-rose-500/30 gap-1 text-[11px] font-semibold">
             <XCircle className="size-3" /> Cancelled
           </Badge>
         );
       case "REJECTED":
         return (
-          <Badge className="bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20 gap-1">
+          <Badge className="bg-rose-500/15 text-rose-300 border-rose-500/30 gap-1 text-[11px] font-semibold">
             <Ban className="size-3" /> Rejected
           </Badge>
         );
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline" className="border-white/[0.12] text-white/80">{status}</Badge>;
     }
   };
 
@@ -77,24 +80,24 @@ export function PassPurchaseDetailModal({
     switch (status) {
       case "SUCCESS":
         return (
-          <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20">
+          <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30 text-[11px] font-semibold">
             Paid
           </Badge>
         );
       case "PENDING":
         return (
-          <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">
-            Pending
+          <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/30 text-[11px] font-semibold">
+            Payment Pending
           </Badge>
         );
       case "FAILED":
         return (
-          <Badge className="bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20">
-            Failed
+          <Badge className="bg-rose-500/15 text-rose-300 border-rose-500/30 text-[11px] font-semibold">
+            Payment Failed
           </Badge>
         );
       default:
-        return <Badge variant="outline">{status || "Unpaid"}</Badge>;
+        return <Badge variant="outline" className="border-white/[0.12] text-white/80">{status || "Unpaid"}</Badge>;
     }
   };
 
@@ -105,15 +108,17 @@ export function PassPurchaseDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto bg-[#16112c] border border-white/[0.1] text-white shadow-2xl">
         <DialogHeader>
           <div className="flex flex-wrap items-center justify-between gap-2 pr-6">
             <div>
-              <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                {purchase.passNumber}
-              </DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                Purchased on{" "}
+              <div className="flex items-center gap-2">
+                <DialogTitle className="text-lg sm:text-xl font-bold text-white flex items-center gap-2 font-mono">
+                  Order #{purchase.passNumber}
+                </DialogTitle>
+              </div>
+              <DialogDescription className="text-xs text-white/60 mt-0.5">
+                Placed on{" "}
                 {new Date(purchase.createdAt).toLocaleString("en-IN", {
                   dateStyle: "medium",
                   timeStyle: "short",
@@ -127,69 +132,108 @@ export function PassPurchaseDetailModal({
           </div>
         </DialogHeader>
 
-        <div className="space-y-6 pt-2">
+        {/* External Issuance Clarification Notice */}
+        <div className="rounded-xl border border-white/[0.08] bg-white/[0.025] p-3 text-xs text-white/65 flex items-start gap-2.5">
+          <Ticket className="size-4 text-indigo-400 shrink-0 mt-0.5" />
+          <p>
+            <span className="font-semibold text-white">Pass Issuance Note:</span> Physical or digital passes are generated and distributed through the college&apos;s separate ticketing system. This record represents the order collected via Euphoria.
+          </p>
+        </div>
+
+        <div className="space-y-5 pt-1">
           {/* Buyer Details */}
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 mb-3">
-              <User className="size-3.5" /> Buyer Information
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-white/50 flex items-center gap-1.5 mb-2.5">
+              <User className="size-3.5 text-euphoria-purple" /> Buyer Information
             </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm bg-muted/40 p-3.5 rounded-lg border border-border/50">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm bg-white/[0.03] p-3.5 rounded-xl border border-white/[0.06]">
               <div>
-                <span className="text-xs text-muted-foreground block">Full Name</span>
-                <span className="font-medium text-foreground">{purchase.fullName}</span>
+                <span className="text-xs text-white/50 block">Full Name</span>
+                <span className="font-medium text-white">{purchase.fullName}</span>
               </div>
               <div>
-                <span className="text-xs text-muted-foreground block">Category</span>
-                <Badge variant="secondary" className="text-xs mt-0.5">
+                <span className="text-xs text-white/50 block">Category</span>
+                <Badge variant="secondary" className="text-xs mt-0.5 bg-white/[0.08] text-white/90 border border-white/[0.1]">
                   {purchase.participantCategory}
                 </Badge>
               </div>
-              <div className="flex items-center gap-2">
-                <Mail className="size-4 text-muted-foreground shrink-0" />
+              <div className="flex items-center gap-2 text-white/80 text-xs">
+                <Mail className="size-3.5 text-white/40 shrink-0" />
                 <span className="truncate">{purchase.email}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Phone className="size-4 text-muted-foreground shrink-0" />
+              <div className="flex items-center gap-2 text-white/80 text-xs">
+                <Phone className="size-3.5 text-white/40 shrink-0" />
                 <span>{purchase.phone}</span>
               </div>
               {purchase.collegeName && (
-                <div className="flex items-center gap-2 sm:col-span-2">
-                  <Building className="size-4 text-muted-foreground shrink-0" />
+                <div className="flex items-center gap-2 sm:col-span-2 text-white/80 text-xs">
+                  <Building className="size-3.5 text-white/40 shrink-0" />
                   <span className="truncate">{purchase.collegeName}</span>
                 </div>
+              )}
+              {purchase.participantCategory === "SAGE" && (
+                <>
+                  {purchase.institute && (
+                    <div className="sm:col-span-2">
+                      <span className="text-xs text-white/50 block">Institute</span>
+                      <span className="text-xs text-white/90 font-medium flex items-center gap-1.5 mt-0.5">
+                        <Building className="size-3 text-euphoria-aqua/70 shrink-0" />
+                        {purchase.institute}
+                      </span>
+                    </div>
+                  )}
+                  {purchase.year && (
+                    <div>
+                      <span className="text-xs text-white/50 block">Year</span>
+                      <span className="text-xs text-white/90 font-medium flex items-center gap-1.5 mt-0.5">
+                        <Calendar className="size-3 text-white/40 shrink-0" />
+                        {purchase.year}
+                      </span>
+                    </div>
+                  )}
+                  {purchase.semester && (
+                    <div>
+                      <span className="text-xs text-white/50 block">Semester</span>
+                      <span className="text-xs text-euphoria-aqua font-medium flex items-center gap-1.5 mt-0.5">
+                        <BookOpen className="size-3 text-euphoria-aqua/70 shrink-0" />
+                        {purchase.semester}
+                      </span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
 
-          <Separator />
+          <Separator className="bg-white/[0.08]" />
 
-          {/* Pass Details */}
+          {/* Pass & Order Information */}
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 mb-3">
-              <Ticket className="size-3.5" /> Pass Details
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-white/50 flex items-center gap-1.5 mb-2.5">
+              <Ticket className="size-3.5 text-indigo-400" /> Order Information
             </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm bg-muted/40 p-3.5 rounded-lg border border-border/50">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm bg-white/[0.03] p-3.5 rounded-xl border border-white/[0.06]">
               <div>
-                <span className="text-xs text-muted-foreground block">Pass Name</span>
-                <span className="font-semibold text-foreground">{purchase.pass.name}</span>
+                <span className="text-xs text-white/50 block">Pass Type</span>
+                <span className="font-semibold text-white">{purchase.pass.name}</span>
                 {purchase.pass.subtitle && (
-                  <span className="text-xs text-muted-foreground block">
+                  <span className="text-xs text-white/60 block">
                     {purchase.pass.subtitle}
                   </span>
                 )}
               </div>
               <div>
-                <span className="text-xs text-muted-foreground block">Quantity</span>
-                <span className="font-medium text-base">{purchase.quantity}</span>
+                <span className="text-xs text-white/50 block">Quantity</span>
+                <span className="font-bold text-white text-base">{purchase.quantity}</span>
               </div>
               {purchase.pass.features && purchase.pass.features.length > 0 && (
                 <div className="sm:col-span-2">
-                  <span className="text-xs text-muted-foreground block mb-1">Included Features</span>
+                  <span className="text-xs text-white/50 block mb-1">Included Features</span>
                   <div className="flex flex-wrap gap-1.5">
                     {purchase.pass.features.map((feat, i) => (
                       <span
                         key={i}
-                        className="text-[11px] bg-background px-2 py-0.5 rounded border border-border/70 text-muted-foreground"
+                        className="text-[11px] bg-white/[0.05] px-2 py-0.5 rounded border border-white/[0.08] text-white/70"
                       >
                         {feat}
                       </span>
@@ -200,42 +244,110 @@ export function PassPurchaseDetailModal({
             </div>
           </div>
 
-          <Separator />
-
-          {/* Payment & Transaction */}
-          <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 mb-3">
-              <CreditCard className="size-3.5" /> Payment Details
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm bg-muted/40 p-3.5 rounded-lg border border-border/50">
+          {/* Pass Holders for Bulk Orders */}
+          {((purchase.holders && purchase.holders.length > 0) || purchase.quantity > 1) && (
+            <>
+              <Separator className="bg-white/[0.08]" />
               <div>
-                <span className="text-xs text-muted-foreground block">Total Amount</span>
-                <span className="text-base font-semibold">
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-white/50 flex items-center gap-1.5 mb-2.5">
+                  <Users className="size-3.5 text-amber-400" /> Pass Holders ({purchase.quantity} Total)
+                </h4>
+                <div className="space-y-2 bg-white/[0.03] p-3.5 rounded-xl border border-white/[0.06]">
+                  {(purchase.holders && purchase.holders.length > 0
+                    ? purchase.holders.some((h) => h.holderIndex === 1)
+                      ? purchase.holders
+                      : [
+                          {
+                            id: "primary",
+                            holderIndex: 1,
+                            fullName: purchase.fullName,
+                            email: purchase.email,
+                            phone: purchase.phone,
+                          },
+                          ...purchase.holders,
+                        ]
+                    : [
+                        {
+                          id: "primary",
+                          holderIndex: 1,
+                          fullName: purchase.fullName,
+                          email: purchase.email,
+                          phone: purchase.phone,
+                        },
+                      ]
+                  ).map((holder, idx) => {
+                    const isPurchaser = holder.holderIndex === 1 || idx === 0;
+                    return (
+                      <div
+                        key={holder.id || idx}
+                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04] text-xs"
+                      >
+                        <div>
+                          <span
+                            className={`text-[10px] uppercase font-bold mr-2 ${
+                              isPurchaser ? "text-amber-400" : "text-white/40"
+                            }`}
+                          >
+                            Pass {holder.holderIndex || idx + 1} {isPurchaser ? "(Purchaser)" : ""}
+                          </span>
+                          <span className="font-semibold text-white">{holder.fullName}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-white/60 text-[11px]">
+                          <span>{holder.email}</span>
+                          <span>{holder.phone}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
+
+          <Separator className="bg-white/[0.08]" />
+
+          {/* Payment & Transaction Details */}
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-white/50 flex items-center gap-1.5 mb-2.5">
+              <CreditCard className="size-3.5 text-emerald-400" /> Payment Details
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm bg-white/[0.03] p-3.5 rounded-xl border border-white/[0.06]">
+              <div>
+                <span className="text-xs text-white/50 block">Total Amount</span>
+                <span className="text-lg font-bold text-emerald-400">
                   ₹{purchase.payment?.amount ?? ((purchase.pass.price || 0) * purchase.quantity)}
                 </span>
               </div>
               <div>
-                <span className="text-xs text-muted-foreground block">Payment Status</span>
-                {getPaymentBadge(purchase.payment?.status)}
+                <span className="text-xs text-white/50 block">Payment Status</span>
+                <div className="mt-0.5">{getPaymentBadge(purchase.payment?.status)}</div>
               </div>
               {purchase.payment?.method && (
                 <div>
-                  <span className="text-xs text-muted-foreground block">Payment Method</span>
-                  <span>{purchase.payment.method}</span>
+                  <span className="text-xs text-white/50 block">Payment Method</span>
+                  <span className="text-white font-medium">{purchase.payment.method}</span>
                 </div>
               )}
               {purchase.payment?.transactionId && (
                 <div className="sm:col-span-2">
-                  <span className="text-xs text-muted-foreground block">Transaction ID</span>
-                  <code className="text-xs font-mono bg-background px-1.5 py-0.5 rounded border">
+                  <span className="text-xs text-white/50 block">Transaction ID</span>
+                  <code className="text-xs font-mono bg-white/[0.06] text-white/90 px-2 py-0.5 rounded border border-white/[0.08]">
                     {purchase.payment.transactionId}
+                  </code>
+                </div>
+              )}
+              {purchase.payment?.gatewayReference && (
+                <div className="sm:col-span-2">
+                  <span className="text-xs text-white/50 block">Gateway Reference</span>
+                  <code className="text-xs font-mono bg-white/[0.06] text-white/90 px-2 py-0.5 rounded border border-white/[0.08]">
+                    {purchase.payment.gatewayReference}
                   </code>
                 </div>
               )}
               {purchase.payment?.paidAt && (
                 <div className="sm:col-span-2">
-                  <span className="text-xs text-muted-foreground block">Paid Timestamp</span>
-                  <span className="text-xs">
+                  <span className="text-xs text-white/50 block">Paid Timestamp</span>
+                  <span className="text-xs text-white/80">
                     {new Date(purchase.payment.paidAt).toLocaleString("en-IN")}
                   </span>
                 </div>
@@ -243,39 +355,39 @@ export function PassPurchaseDetailModal({
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="pt-2 border-t flex flex-wrap items-center justify-between gap-3">
+          {/* Status Update & Delete Actions */}
+          <div className="pt-3 border-t border-white/[0.08] flex flex-wrap items-center justify-between gap-3">
             {onUpdateStatus && (
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-muted-foreground font-medium mr-1">Status:</span>
+                <span className="text-xs text-white/50 font-medium mr-1">Order Status:</span>
                 {purchase.status !== "CONFIRMED" && (
                   <Button
                     size="sm"
                     variant="outline"
-                    className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30 border-green-200"
+                    className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 border-emerald-500/30 text-xs h-8"
                     onClick={() => onUpdateStatus(purchase.id, "CONFIRMED")}
                   >
-                    <CheckCircle className="size-3.5 mr-1" /> Confirm
+                    <CheckCircle className="size-3.5 mr-1" /> Mark Confirmed
                   </Button>
                 )}
                 {purchase.status !== "CANCELLED" && (
                   <Button
                     size="sm"
                     variant="outline"
-                    className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30 border-amber-200"
+                    className="text-amber-300 hover:text-amber-200 hover:bg-amber-500/10 border-amber-500/30 text-xs h-8"
                     onClick={() => onUpdateStatus(purchase.id, "CANCELLED")}
                   >
-                    <XCircle className="size-3.5 mr-1" /> Cancel
+                    <XCircle className="size-3.5 mr-1" /> Mark Cancelled
                   </Button>
                 )}
                 {purchase.status !== "REJECTED" && (
                   <Button
                     size="sm"
                     variant="outline"
-                    className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30 border-rose-200"
+                    className="text-rose-300 hover:text-rose-200 hover:bg-rose-500/10 border-rose-500/30 text-xs h-8"
                     onClick={() => onUpdateStatus(purchase.id, "REJECTED")}
                   >
-                    <Ban className="size-3.5 mr-1" /> Reject
+                    <Ban className="size-3.5 mr-1" /> Mark Rejected
                   </Button>
                 )}
               </div>
@@ -288,13 +400,13 @@ export function PassPurchaseDetailModal({
                 disabled={!canDelete}
                 title={
                   canDelete
-                    ? "Permanently delete this pass purchase"
-                    : "Must be Cancelled or Rejected before deletion"
+                    ? "Permanently delete this pass order"
+                    : "Order must be Cancelled or Rejected and Unpaid before deletion"
                 }
                 onClick={() => onDelete(purchase)}
-                className="gap-1.5 ml-auto"
+                className="gap-1.5 ml-auto text-xs h-8"
               >
-                <Trash2 className="size-3.5" /> Delete
+                <Trash2 className="size-3.5" /> Delete Order
               </Button>
             )}
           </div>

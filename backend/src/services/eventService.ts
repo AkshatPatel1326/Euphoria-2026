@@ -20,6 +20,21 @@ export class EventService {
       status: EventStatus.PUBLISHED,
     };
 
+    // Exclude test events from public listings unless explicitly requested via category filter or ENABLE_TEST_EVENT env
+    const isTestExplicitlyRequested =
+      category &&
+      (category.toLowerCase().trim() === "test" ||
+        category.toLowerCase().trim() === "test-category" ||
+        category.trim() === "cat-test-sandbox");
+    const allowTestEvents =
+      process.env.ENABLE_TEST_EVENT === "true" || Boolean(isTestExplicitlyRequested);
+
+    if (!allowTestEvents) {
+      where.category = {
+        slug: { notIn: ["test", "test-category"] },
+      };
+    }
+
     // Filter by Category (slug or ID)
     if (category && typeof category === "string" && category.trim() !== "") {
       const normalizedCategory = category.trim().toLowerCase();

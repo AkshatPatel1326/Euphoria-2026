@@ -27,8 +27,15 @@ export function Events() {
 
   const filtered =
     activeCategory === "all"
-      ? events
-      : events.filter((e) => e.category === activeCategory);
+      ? events.filter((e) => e.status !== "DRAFT" && e.id !== "cultural-6")
+      : events.filter(
+          (e) =>
+            e.category === activeCategory &&
+            e.status !== "DRAFT" &&
+            e.id !== "cultural-6" &&
+            (activeCategory !== "cultural" ||
+              (e.id !== "cultural-11" && e.id !== "cultural-12"))
+        );
 
   const selectedEventData = events.find((e) => e.id === selectedEvent) ?? null;
 
@@ -58,7 +65,7 @@ export function Events() {
           </h2>
           <p className="mt-4 text-sm sm:text-base text-white/65 max-w-xl mx-auto leading-relaxed">
             A vibrant blend of art, music, culture, innovation, competitions, and performance —
-            across four disciplines and over twenty-five events.
+            across four disciplines and over thirty events.
           </p>
         </BlurFade>
 

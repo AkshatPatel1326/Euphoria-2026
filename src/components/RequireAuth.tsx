@@ -9,8 +9,13 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 
   if (isLoading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      <main className="flex min-h-screen items-center justify-center bg-euphoria-dark">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <Loader2 className="size-8 animate-spin text-euphoria-aqua" />
+          <p className="text-xs font-semibold tracking-widest uppercase text-white/50">
+            Loading...
+          </p>
+        </div>
       </main>
     );
   }

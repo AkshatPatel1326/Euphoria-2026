@@ -67,6 +67,17 @@ export function apiPost<T = unknown>(
   });
 }
 
+/** PUT /api/<path> with JSON body */
+export function apiPut<T = unknown>(
+  path: string,
+  data?: unknown
+): Promise<T> {
+  return apiFetch<T>(path, {
+    method: "PUT",
+    body: data ? JSON.stringify(data) : undefined,
+  });
+}
+
 /** PATCH /api/<path> with JSON body */
 export function apiPatch<T = unknown>(
   path: string,
