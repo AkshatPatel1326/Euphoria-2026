@@ -260,7 +260,7 @@ function CategoryRow({
 /* ── Main section ───────────────────────────────────────────── */
 export function CategoryCards() {
   return (
-    <section id="events" className="relative py-14 sm:py-16 lg:py-20 overflow-hidden">
+    <section id="events" className="relative py-12 sm:py-16 lg:py-20 overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-euphoria-darker" />
       <div

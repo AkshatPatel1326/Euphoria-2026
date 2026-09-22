@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronRight, Lock } from "lucide-react";
 import { events as staticEvents, type EuphoriaEvent } from "@/data/events";
+import { getRulebookUrl } from "@/data/rulebooks";
 import { RegistrationFlow } from "./RegistrationFlow";
 
 const categoryColor: Record<string, string> = {
@@ -510,6 +511,8 @@ export function EventDetailModal({
     return event;
   }, [event, mngPool, mngVariant, mngStage, sparkPool, sparkVariant, mhPool, mhStage, ffPool, ffVariant, bmPool, bmVariant, stageOnlyPool, swaraStage]);
 
+  const rulebookUrl = useMemo(() => getRulebookUrl(activeEvent), [activeEvent]);
+
   const isRegOpen = activeEvent?.registrationOpen ?? false;
 
   return (
@@ -912,15 +915,18 @@ export function EventDetailModal({
                   ))}
                 </div>
 
-                {/* Rules */}
-                <div className="glass-card rounded-xl p-4">
-                  <h4 className="text-[10px] font-semibold tracking-[0.2em] uppercase text-white/55 mb-2">
-                    Rules &amp; Guidelines
-                  </h4>
-                  <p className="text-xs text-white/65 leading-relaxed">
-                    {activeEvent.rules}
-                  </p>
-                </div>
+                {/* Rulebook Button (Non-sports events with mapped rulebook) */}
+                {rulebookUrl && (
+                  <a
+                    href={rulebookUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center justify-center gap-2 py-3.5 px-4 text-xs sm:text-sm font-bold tracking-[0.15em] uppercase text-euphoria-aqua bg-euphoria-aqua/[0.08] hover:bg-euphoria-aqua/[0.16] border border-euphoria-aqua/30 hover:border-euphoria-aqua/50 rounded-xl transition-all duration-300 shadow-md shadow-euphoria-aqua/5 hover:shadow-euphoria-aqua/15 hover:scale-[1.01] active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-euphoria-aqua focus-visible:outline-none group cursor-pointer"
+                  >
+                    <span>VIEW RULEBOOK</span>
+                    <span className="transition-transform duration-200 group-hover:translate-x-1">→</span>
+                  </a>
+                )}
 
                 {/* Divider */}
                 <div className="h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />

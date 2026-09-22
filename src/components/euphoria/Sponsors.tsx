@@ -83,7 +83,7 @@ function SponsorBackground() {
 /* ── Animated gradient divider ──────────────────────────────── */
 function GradientDivider() {
   return (
-    <div className="relative w-full h-px mb-16 overflow-hidden">
+    <div className="relative w-full h-px mb-8 sm:mb-10 lg:mb-12 overflow-hidden">
       <div
         className="absolute inset-0 animate-gradient-shift"
         style={{
@@ -203,22 +203,8 @@ export function Sponsors() {
           ))}
         </div>
 
-        {/* ── Pro Night tease ──────────────────────────────── */}
-        <BlurFade delay={0.6} inViewMargin="-60px" className="text-center mt-14 sm:mt-16">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <div className="h-px w-8 bg-euphoria-purple/30" />
-            <span className="text-[9px] sm:text-[10px] font-semibold tracking-[0.4em] sm:tracking-[0.5em] uppercase text-euphoria-purple/70">
-              Pro Night
-            </span>
-            <div className="h-px w-8 bg-euphoria-purple/30" />
-          </div>
-          <p className="text-[10px] sm:text-[11px] text-white/55 sm:text-white/45 tracking-wider">
-            Headliner artist to be announced
-          </p>
-        </BlurFade>
-
         {/* ── Partnership inquiry ──────────────────── */}
-        <BlurFade delay={0.7} inViewMargin="-60px" className="text-center mt-8">
+        <BlurFade delay={0.5} inViewMargin="-60px" className="text-center mt-10 sm:mt-12">
           <p className="text-[10px] sm:text-[11px] text-white/65 sm:text-white/50 tracking-[0.14em] sm:tracking-[0.2em] px-4 leading-relaxed">
             For partnership inquiries:{" "}
             <span className="text-euphoria-gold/85 font-semibold break-all sm:break-normal">sponsorship@sageuniversity.in</span>

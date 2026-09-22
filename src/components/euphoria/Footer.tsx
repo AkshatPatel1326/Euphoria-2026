@@ -108,7 +108,7 @@ function FooterMarquee() {
 /* ── Animated gradient divider ─────────────────────────────── */
 function GradientDivider() {
   return (
-    <div className="relative w-full h-px mb-14 overflow-hidden">
+    <div className="relative w-full h-px mb-8 sm:mb-10 lg:mb-12 overflow-hidden">
       <div
         className="absolute inset-0 animate-gradient-shift"
         style={{

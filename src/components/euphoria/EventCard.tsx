@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import type { EuphoriaEvent, EventCategory } from "@/data/events";
+import { getRulebookUrl } from "@/data/rulebooks";
 
 const categoryAccent: Record<EventCategory, string> = {
   cultural: "text-euphoria-purple",
@@ -322,6 +323,8 @@ export function EventCard({
     familyHeader = event.eventFamily ?? null;
   }
 
+  const rulebookUrl = getRulebookUrl(displayEvent);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -629,12 +632,35 @@ export function EventCard({
           </div>
 
           <div className="mt-auto pt-3">
-            <button
-              onClick={() => onViewEvent(displayEvent)}
-              className="w-full text-center min-h-[42px] sm:min-h-0 py-2.5 sm:py-2 flex items-center justify-center text-[11px] font-bold tracking-[0.15em] uppercase text-euphoria-aqua border border-euphoria-aqua/40 bg-euphoria-aqua/[0.04] rounded-md transition-all duration-300 hover:bg-euphoria-aqua/15 hover:border-euphoria-aqua hover:shadow-[0_0_15px_rgba(62,238,213,0.2)] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-euphoria-aqua focus-visible:outline-none cursor-pointer"
-            >
-              View Event
-            </button>
+            {rulebookUrl ? (
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => onViewEvent(displayEvent)}
+                  className="w-full text-center min-h-[40px] py-2 px-1 sm:px-2 flex items-center justify-center text-[10px] sm:text-[11px] font-bold tracking-[0.08em] sm:tracking-[0.12em] uppercase text-euphoria-aqua border border-euphoria-aqua/40 bg-euphoria-aqua/[0.04] rounded-md transition-all duration-300 hover:bg-euphoria-aqua/15 hover:border-euphoria-aqua hover:shadow-[0_0_15px_rgba(62,238,213,0.2)] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-euphoria-aqua focus-visible:outline-none cursor-pointer truncate"
+                >
+                  View Event
+                </button>
+                <a
+                  href={rulebookUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full text-center min-h-[40px] py-2 px-1 sm:px-2 flex items-center justify-center gap-1 text-[10px] sm:text-[11px] font-bold tracking-[0.08em] sm:tracking-[0.12em] uppercase text-euphoria-aqua border border-euphoria-aqua/40 bg-euphoria-aqua/[0.08] hover:bg-euphoria-aqua/[0.18] hover:border-euphoria-aqua hover:shadow-[0_0_15px_rgba(62,238,213,0.2)] rounded-md transition-all duration-300 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-euphoria-aqua focus-visible:outline-none group cursor-pointer whitespace-nowrap"
+                >
+                  <span>VIEW RULEBOOK</span>
+                  <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+                </a>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onViewEvent(displayEvent)}
+                className="w-full text-center min-h-[40px] py-2.5 sm:py-2 flex items-center justify-center text-[11px] font-bold tracking-[0.15em] uppercase text-euphoria-aqua border border-euphoria-aqua/40 bg-euphoria-aqua/[0.04] rounded-md transition-all duration-300 hover:bg-euphoria-aqua/15 hover:border-euphoria-aqua hover:shadow-[0_0_15px_rgba(62,238,213,0.2)] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-euphoria-aqua focus-visible:outline-none cursor-pointer"
+              >
+                View Event
+              </button>
+            )}
           </div>
         </div>
       </div>

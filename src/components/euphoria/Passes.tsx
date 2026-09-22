@@ -158,7 +158,7 @@ export function Passes() {
       {/* ────────────────────────────────────────── */}
       <div
         ref={cardRef}
-        className="max-w-[720px] mx-auto px-4 sm:px-6 lg:px-8 mb-16 sm:mb-24"
+        className="max-w-[720px] mx-auto px-4 sm:px-6 lg:px-8"
       >
         <motion.div
           variants={fadeUp}

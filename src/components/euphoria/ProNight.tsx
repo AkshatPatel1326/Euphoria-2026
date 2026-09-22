@@ -142,7 +142,7 @@ export function ProNight() {
     <section
       id="pro-night"
       ref={sectionRef}
-      className="relative py-14 sm:py-20 lg:py-24 overflow-hidden bg-euphoria-dark"
+      className="relative py-12 sm:py-16 lg:py-20 overflow-hidden bg-euphoria-dark"
     >
       {/* ─── Cinematic Background Atmosphere ─── */}
       <div
