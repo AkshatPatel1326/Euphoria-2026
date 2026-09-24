@@ -1,3 +1,28 @@
+/* ═══════════════════════════════════════════════════════════════
+   EUPHORIA DATABASE SEED SCRIPT (DEVELOPMENT & TEST ONLY)
+   ═══════════════════════════════════════════════════════════════
+   WARNING: This script is intended STRICTLY for local development
+   and disposable testing environments.
+
+   DO NOT RUN THIS SCRIPT IN PRODUCTION.
+   Running this script against a live production database will:
+     - Overwrite dynamically managed event registration fees
+     - Overwrite dynamic festival pass pricing and pass status
+     - Overwrite administrative user password hashes
+     - Overwrite event schedules and category details
+
+   PRODUCTION DATABASE INITIALIZATION / DEPLOYMENT:
+     1. npm install
+     2. npx prisma generate
+     3. npx prisma migrate deploy
+     4. npm run build
+     5. npm run start
+
+   In production (NODE_ENV=production), this script is guarded
+   and will immediately terminate with an error before executing
+   any database operations.
+   ═══════════════════════════════════════════════════════════════ */
+
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import {
@@ -1068,6 +1093,33 @@ const rawEvents: RawEvent[] = [
    MAIN SEED EXECUTION
    ═══════════════════════════════════════════════════════════════ */
 async function main() {
+  // ── PRODUCTION SAFETY GUARD ──────────────────────────────────────────
+  // Seeding is STRICTLY PROHIBITED in production (NODE_ENV=production).
+  // Running the seed script in production would overwrite manually managed data
+  // (dynamic event pricing, festival pass prices/status, admin credentials,
+  // announcements, and event schedules).
+  if (process.env.NODE_ENV?.trim().toLowerCase() === "production") {
+    console.error("================================================================================");
+    console.error("🛑 [PRODUCTION SAFETY GUARD] Database seeding is BLOCKED in production!");
+    console.error("================================================================================");
+    console.error("Environment detected: NODE_ENV = 'production'");
+    console.error("The seed script is strictly intended for local development and test databases.");
+    console.error("Executing seed against a production database would overwrite live data including:");
+    console.error("  • Dynamic event pricing (fees) and capacities");
+    console.error("  • Dynamic festival pass pricing and availability status");
+    console.error("  • Admin user credentials and password hashes");
+    console.error("  • Event schedules and category configurations");
+    console.error("");
+    console.error("For production database setup and schema updates, use:");
+    console.error("  npx prisma migrate deploy");
+    console.error("");
+    console.error("Seeding aborted. No database modifications were performed.");
+    console.error("================================================================================");
+    throw new Error(
+      "Database seeding is blocked because NODE_ENV is set to 'production'. Development seed must not run against production."
+    );
+  }
+
   console.log("🌱 Starting Euphoria Database Seeding...\n");
 
   // 1. Seed Categories
@@ -1286,7 +1338,7 @@ async function main() {
 
 main()
   .catch((e) => {
-    console.error("❌ Seeding failed with error:", e);
+    console.error("\n❌ Seeding failed with error:", e instanceof Error ? e.message : e);
     process.exit(1);
   })
   .finally(async () => {

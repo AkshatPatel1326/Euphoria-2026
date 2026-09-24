@@ -7,9 +7,13 @@ export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
+    // Note: 'seed' is invoked ONLY by 'prisma db seed' for local development & testing.
+    // In production, database updates MUST use 'npx prisma migrate deploy' (which never runs seed).
     seed: "npx tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // For Prisma CLI / migration operations, use DIRECT_URL (direct port 5432, session mode)
+    // if provided. Otherwise fallback to DATABASE_URL (transaction pooler or local PostgreSQL).
+    url: process.env["DIRECT_URL"] || process.env["DATABASE_URL"],
   },
 });

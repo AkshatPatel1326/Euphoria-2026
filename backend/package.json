@@ -2,21 +2,26 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/src/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
-    "start": "tsx src/server.ts",
+    "build": "prisma generate && tsc",
+    "start": "node dist/src/server.js",
+    "start:dev": "tsx src/server.ts",
     "seed": "prisma db seed",
     "db:clean-test-data": "tsx src/scripts/clean-test-data.ts",
     "test:email": "tsx src/scripts/testEmail.ts",
-    "postinstall": "prisma skills sync || exit 0",
+    "postinstall": "prisma generate",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0",
+    "npm": ">=10.0.0"
+  },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
