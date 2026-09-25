@@ -1,13 +1,2 @@
-import { Router } from "express";
-import { getAllSchedulesHandler } from "../controllers/scheduleController";
-
-const router = Router();
-
-/**
- * @route   GET /api/schedules
- * @desc    Get all confirmed event timeline schedules
- * @access  Public
- */
-router.get("/", getAllSchedulesHandler);
-
-export default router;
+export * from "../modules/catalog/schedule.routes";
+export { default } from "../modules/catalog/schedule.routes";

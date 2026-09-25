@@ -22,20 +22,41 @@ export interface EventSchedule {
   timeString?: string | null;
 }
 
+export interface CoordinatorItem {
+  name: string;
+  phone: string;
+}
+
 export interface AdminEvent {
   id: string;
   name: string;
   slug?: string | null;
+  description?: string;
+  posterUrl?: string | null;
   categoryId: string;
   category?: Category | null;
   registrationType: "INDIVIDUAL" | "GROUP";
   minTeamSize: number;
   maxTeamSize: number;
   fee: number;
-  venue?: string | null;
+  date?: string | null;
+  day?: string | null;
   time?: string | null;
+  venue?: string | null;
+  prizes?: string | null;
+  rules?: string | null;
+  facultyCoordinator?: string | null;
+  studentCoordinator?: string | null;
+  facultyCoordinators?: CoordinatorItem[];
+  studentCoordinators?: CoordinatorItem[];
+  eventFamily?: string | null;
+  stage?: string | null;
+  variant?: string | null;
   status: string;
   organizerId?: string | null;
+  registrationOpen: boolean;
+  capacity?: number | null;
+  activeRegistrationsCount?: number;
 }
 
 export interface TeamMember {

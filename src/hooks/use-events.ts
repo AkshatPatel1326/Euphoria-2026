@@ -38,6 +38,7 @@ interface BackendEvent {
   maxTeamSize: number;
   registrationOpen: boolean;
   capacity: number | null;
+  activeRegistrationsCount?: number;
   status: string;
   date: string | null;
   day: string | null;
@@ -47,6 +48,8 @@ interface BackendEvent {
   rules: string | null;
   facultyCoordinator?: string | null;
   studentCoordinator?: string | null;
+  facultyCoordinators?: Array<{ name: string; phone: string }>;
+  studentCoordinators?: Array<{ name: string; phone: string }>;
   eventFamily?: string | null;
   stage?: string | null;
   variant?: string | null;
@@ -184,6 +187,91 @@ const EVENT_FAMILY_MAP: Record<
 };
 
 /**
+ * Automatically derives the day of the week (e.g., "Thursday") from a date string.
+ */
+export function deriveDayFromDate(dateStr: string | null | undefined): string {
+  if (!dateStr || typeof dateStr !== "string") return "";
+  const trimmed = dateStr.trim();
+  if (!trimmed || trimmed === "TBA") return "";
+
+  // 1. Try Date.parse / standard Date constructor
+  let d = new Date(trimmed);
+  if (!isNaN(d.getTime())) {
+    return d.toLocaleDateString("en-US", { weekday: "long" });
+  }
+
+  // 2. Handle DD/MM/YYYY or DD-MM-YYYY
+  const dmyMatch = trimmed.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (dmyMatch) {
+    const day = parseInt(dmyMatch[1], 10);
+    const month = parseInt(dmyMatch[2], 10) - 1;
+    const year = parseInt(dmyMatch[3], 10);
+    d = new Date(year, month, day);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString("en-US", { weekday: "long" });
+    }
+  }
+
+  // 3. Handle e.g. "9th April 2026"
+  const cleanOrdinal = trimmed.replace(/(\d+)(st|nd|rd|th)/i, "$1");
+  d = new Date(cleanOrdinal);
+  if (!isNaN(d.getTime())) {
+    return d.toLocaleDateString("en-US", { weekday: "long" });
+  }
+
+  return "";
+}
+
+/**
+ * Parses coordinator string (or JSON) into structured array of { name, phone }.
+ */
+export function parseCoordinatorString(raw?: string | null): Array<{ name: string; phone: string }> {
+  if (!raw || !raw.trim()) return [];
+
+  const trimmed = raw.trim();
+  if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .filter((item) => item && typeof item === "object")
+          .map((item) => ({
+            name: String(item.name || "").trim(),
+            phone: String(item.phone || "").trim(),
+          }))
+          .filter((item) => item.name.length > 0 || item.phone.length > 0);
+      }
+    } catch {}
+  }
+
+  const entries = trimmed
+    .split(/[\r\n;]+|,(?![^(]*\))/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  return entries.map((entry) => {
+    const sepMatch = entry.match(/^(.+?)\s*(?:-|:|–|—)\s*([0-9\s+()-]{7,20})$/);
+    if (sepMatch) {
+      return {
+        name: sepMatch[1].trim(),
+        phone: sepMatch[2].trim(),
+      };
+    }
+    const phoneMatch = entry.match(/^(.+?)\s+([0-9]{10})$/);
+    if (phoneMatch) {
+      return {
+        name: phoneMatch[1].trim(),
+        phone: phoneMatch[2].trim(),
+      };
+    }
+    return {
+      name: entry.trim(),
+      phone: "",
+    };
+  });
+}
+
+/**
  * Maps a backend EventDetail to the frontend EuphoriaEvent interface.
  * Returns null if a sports event is not part of the finalized 11-event list.
  */
@@ -201,13 +289,14 @@ function mapBackendEvent(e: BackendEvent): EuphoriaEvent | null {
     const familyInfo = EVENT_FAMILY_MAP[e.id];
     const eventFamily = e.eventFamily || familyInfo?.eventFamily;
     const variant = (e.variant as string) || familyInfo?.variant;
+    const calculatedDay = e.day || deriveDayFromDate(e.date);
 
     return {
       id: e.id,
-      name: sportsConfig.name,
+      name: e.name || sportsConfig.name,
       category: "sports",
       description: e.description,
-      poster: sportsConfig.poster,
+      poster: e.posterUrl || sportsConfig.poster,
       fee,
       registrationType: e.registrationType.toLowerCase() as RegistrationType,
       minTeamSize: e.minTeamSize,
@@ -215,7 +304,7 @@ function mapBackendEvent(e: BackendEvent): EuphoriaEvent | null {
       registrationOpen: e.registrationOpen,
       registrationFee: fee === 0 ? "Free" : `₹${fee.toLocaleString("en-IN")}`,
       date: e.date ?? "TBA",
-      day: e.day ?? "",
+      day: calculatedDay,
       time: e.time ?? "TBA",
       venue: e.venue ?? "TBA",
       teamSize:
@@ -226,8 +315,17 @@ function mapBackendEvent(e: BackendEvent): EuphoriaEvent | null {
       rules: e.rules ?? "",
       facultyCoordinator: e.facultyCoordinator ?? undefined,
       studentCoordinator: e.studentCoordinator ?? undefined,
+      facultyCoordinators:
+        e.facultyCoordinators ??
+        (e.facultyCoordinator ? parseCoordinatorString(e.facultyCoordinator) : undefined),
+      studentCoordinators:
+        e.studentCoordinators ??
+        (e.studentCoordinator ? parseCoordinatorString(e.studentCoordinator) : undefined),
       eventFamily: eventFamily ?? undefined,
       variant: variant ?? undefined,
+      capacity: e.capacity ?? undefined,
+      activeRegistrationsCount: e.activeRegistrationsCount ?? undefined,
+      status: (e.status as "DRAFT" | "PUBLISHED" | "COMPLETED" | "CANCELLED") ?? undefined,
     };
   }
 
@@ -236,9 +334,10 @@ function mapBackendEvent(e: BackendEvent): EuphoriaEvent | null {
   const stage = (e.stage as "audition" | "main") || familyInfo?.stage;
   const variant = (e.variant as string) || familyInfo?.variant;
 
-  // Use familyInfo posterUrl if available, otherwise backend posterUrl, otherwise fall back to static event data poster
+  // Authoritative DB posterUrl takes highest priority, then familyInfo, then static
   const staticMatch = staticEvents.find((se) => se.id === e.id);
-  const resolvedPoster = familyInfo?.posterUrl ?? e.posterUrl ?? staticMatch?.poster ?? null;
+  const resolvedPoster = e.posterUrl ?? familyInfo?.posterUrl ?? staticMatch?.poster ?? null;
+  const calculatedDay = e.day || deriveDayFromDate(e.date);
 
   return {
     id: e.id,
@@ -253,7 +352,7 @@ function mapBackendEvent(e: BackendEvent): EuphoriaEvent | null {
     registrationOpen: e.registrationOpen,
     registrationFee: e.fee === 0 ? "Free" : `₹${e.fee.toLocaleString("en-IN")}`,
     date: e.date ?? "TBA",
-    day: e.day ?? "",
+    day: calculatedDay,
     time: e.time ?? "TBA",
     venue: e.venue ?? "TBA",
     teamSize:
@@ -264,8 +363,15 @@ function mapBackendEvent(e: BackendEvent): EuphoriaEvent | null {
     rules: e.rules ?? "",
     facultyCoordinator: e.facultyCoordinator ?? undefined,
     studentCoordinator: e.studentCoordinator ?? undefined,
+    facultyCoordinators:
+      e.facultyCoordinators ??
+      (e.facultyCoordinator ? parseCoordinatorString(e.facultyCoordinator) : undefined),
+    studentCoordinators:
+      e.studentCoordinators ??
+      (e.studentCoordinator ? parseCoordinatorString(e.studentCoordinator) : undefined),
     status: (e.status as "DRAFT" | "PUBLISHED" | "COMPLETED" | "CANCELLED") ?? undefined,
     capacity: e.capacity ?? undefined,
+    activeRegistrationsCount: e.activeRegistrationsCount ?? undefined,
     eventFamily: eventFamily ?? undefined,
     stage: stage ?? undefined,
     variant: variant ?? undefined,

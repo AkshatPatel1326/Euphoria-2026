@@ -4,6 +4,11 @@ export type RegistrationType = "individual" | "group";
 export type PaymentStatus = "pending" | "success" | "failed" | "cancelled";
 export type ParticipantCategory = "sage" | "other-college" | "general";
 
+export interface CoordinatorItem {
+  name: string;
+  phone: string;
+}
+
 export interface EuphoriaEvent {
   id: string;
   name: string;
@@ -31,12 +36,15 @@ export interface EuphoriaEvent {
   /* ── Coordinator fields ── */
   facultyCoordinator?: string;
   studentCoordinator?: string;
+  facultyCoordinators?: CoordinatorItem[];
+  studentCoordinators?: CoordinatorItem[];
 
   /* ── Event Family / Stage / Variant relationship ── */
   eventFamily?: string;
   variant?: "solo" | "group" | "single" | "double" | "1-dress" | "6-dress" | string;
   stage?: "audition" | "main" | "finalist";
   capacity?: number;
+  activeRegistrationsCount?: number;
   status?: "DRAFT" | "PUBLISHED" | "COMPLETED" | "CANCELLED";
 }
 

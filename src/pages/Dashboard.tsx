@@ -5,13 +5,13 @@ import { useNavigate } from "react-router";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AdminHeader } from "@/components/admin/AdminHeader";
-import { AdminOverviewTab } from "@/components/admin/AdminOverviewTab";
-import { AdminRegistrationsTab } from "@/components/admin/AdminRegistrationsTab";
-import { AdminPassesTab } from "@/components/admin/AdminPassesTab";
-import { AdminExportTab } from "@/components/admin/AdminExportTab";
-import { AdminPricingTab } from "@/components/admin/AdminPricingTab";
-import { AdminUpdatesTab } from "@/components/admin/AdminUpdatesTab";
+import { AdminHeader } from "@/features/admin/components/AdminHeader";
+import { AdminOverviewTab } from "@/features/admin/tabs/AdminOverviewTab";
+import { AdminRegistrationsTab } from "@/features/admin/tabs/AdminRegistrationsTab";
+import { AdminPassesTab } from "@/features/admin/tabs/AdminPassesTab";
+import { AdminExportTab } from "@/features/admin/tabs/AdminExportTab";
+import { AdminUpdatesTab } from "@/features/admin/tabs/AdminUpdatesTab";
+import { AdminEventsTab } from "@/features/admin/tabs/AdminEventsTab";
 import type {
   AdminOverviewStats,
   AdminRegistration,
@@ -34,8 +34,8 @@ import {
   Loader2,
   LogOut,
   Download,
-  Tag,
   Megaphone,
+  SlidersHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -328,6 +328,15 @@ export default function Dashboard() {
                   )}
                 </TabsTrigger>
 
+                {/* Event Management: Registration Status & Capacity Limits */}
+                <TabsTrigger
+                  value="events"
+                  className="gap-2 text-xs py-1.5 px-3 rounded-lg text-white/70 hover:text-white data-[state=active]:bg-white/[0.1] data-[state=active]:text-white data-[state=active]:shadow-xs transition-colors"
+                >
+                  <SlidersHorizontal className="size-3.5" />
+                  Event Management
+                </TabsTrigger>
+
                 {/* Pass Orders: STRICTLY ADMIN ONLY */}
                 {isAdmin && (
                   <TabsTrigger
@@ -341,17 +350,6 @@ export default function Dashboard() {
                         {stats.totalPassPurchases}
                       </span>
                     )}
-                  </TabsTrigger>
-                )}
-
-                {/* Dynamic Pricing: STRICTLY ADMIN ONLY */}
-                {isAdmin && (
-                  <TabsTrigger
-                    value="pricing"
-                    className="gap-2 text-xs py-1.5 px-3 rounded-lg text-white/70 hover:text-white data-[state=active]:bg-white/[0.1] data-[state=active]:text-white data-[state=active]:shadow-xs transition-colors"
-                  >
-                    <Tag className="size-3.5" />
-                    Pricing Management
                   </TabsTrigger>
                 )}
 
@@ -411,6 +409,26 @@ export default function Dashboard() {
               />
             </TabsContent>
 
+            {/* Tab: Event Management (Registration Status & Capacity Limits) */}
+            <TabsContent value="events" className="mt-0 focus-visible:outline-none">
+              <AdminEventsTab
+                isAdmin={isAdmin}
+                events={events}
+                categories={categories}
+                currentUserId={user?.id}
+                onEventUpdated={(updatedEvent) => {
+                  setEvents((prev) =>
+                    prev.map((e) =>
+                      e.id === updatedEvent.id
+                        ? { ...e, ...updatedEvent }
+                        : e
+                    )
+                  );
+                }}
+                onRefresh={handleRefresh}
+              />
+            </TabsContent>
+
             {/* Tab 3: Pass Orders (STRICTLY ADMIN ONLY) */}
             {isAdmin && (
               <TabsContent value="passes" className="mt-0 focus-visible:outline-none">
@@ -421,25 +439,6 @@ export default function Dashboard() {
                   selectedPassForDetail={selectedPassForDetail}
                   onClearSelectedPass={() => setSelectedPassForDetail(null)}
                   onDataChanged={fetchAdminData}
-                />
-              </TabsContent>
-            )}
-
-            {/* Tab: Dynamic Pricing (STRICTLY ADMIN ONLY) */}
-            {isAdmin && (
-              <TabsContent value="pricing" className="mt-0 focus-visible:outline-none">
-                <AdminPricingTab
-                  isAdmin={isAdmin}
-                  events={events}
-                  passes={passes}
-                  categories={categories}
-                  onEventPriceUpdated={(updatedEvent) => {
-                    setEvents((prev) =>
-                      prev.map((e) =>
-                        e.id === updatedEvent.id ? { ...e, fee: updatedEvent.fee } : e
-                      )
-                    );
-                  }}
                   onPassPriceUpdated={(updatedPass) => {
                     setPasses((prev) =>
                       prev.map((p) =>
@@ -447,7 +446,6 @@ export default function Dashboard() {
                       )
                     );
                   }}
-                  onRefresh={handleRefresh}
                 />
               </TabsContent>
             )}

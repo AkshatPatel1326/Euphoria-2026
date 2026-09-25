@@ -9,9 +9,9 @@ import {
   type EuphoriaEvent,
 } from "@/data/events";
 import { useEvents } from "@/hooks/use-events";
-import { EventCard } from "@/components/euphoria/EventCard";
-import { EventCardSkeleton } from "@/components/euphoria/EventCardSkeleton";
-import { EventDetailModal } from "@/components/euphoria/EventDetailModal";
+import { EventCard } from "@/features/events/components/EventCard";
+import { EventCardSkeleton } from "@/features/events/components/EventCardSkeleton";
+import { EventDetailModal } from "@/features/events/components/EventDetailModal";
 
 const validCategories: EventCategory[] = [
   "cultural",

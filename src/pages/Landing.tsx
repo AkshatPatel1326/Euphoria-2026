@@ -1,15 +1,15 @@
-import { Navbar } from "@/components/euphoria/Navbar";
-import { Hero } from "@/components/euphoria/Hero";
-import { Updates } from "@/components/euphoria/Updates";
-import { About } from "@/components/euphoria/About";
-import { PastNights } from "@/components/euphoria/PastNights";
-import { CategoryCards } from "@/components/euphoria/CategoryCards";
-import { Glimpses } from "@/components/euphoria/Glimpses";
-import { ProNight } from "@/components/euphoria/ProNight";
-import { Passes } from "@/components/euphoria/Passes";
-import { Sponsors } from "@/components/euphoria/Sponsors";
-import { FAQ } from "@/components/euphoria/FAQ";
-import { Footer } from "@/components/euphoria/Footer";
+import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
+import { Hero } from "@/features/home/Hero";
+import { About } from "@/features/home/About";
+import { Glimpses } from "@/features/home/Glimpses";
+import { Sponsors } from "@/features/home/Sponsors";
+import { FAQ } from "@/features/home/FAQ";
+import { Updates } from "@/features/updates/components/UpdatesTicker";
+import { CategoryCards } from "@/features/events/components/CategoryCards";
+import { Passes } from "@/features/passes/components/PassesSection";
+import { ProNight } from "@/features/pronight/components/ProNight";
+import { PastNights } from "@/features/pronight/components/PastNights";
 import { SmoothCursor } from "@/components/magicui/smooth-cursor";
 
 export default function Landing() {

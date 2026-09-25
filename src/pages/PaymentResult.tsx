@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router";
-import { Navbar } from "@/components/euphoria/Navbar";
-import { Footer } from "@/components/euphoria/Footer";
+import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
 import { SmoothCursor } from "@/components/magicui/smooth-cursor";
 import {
   CheckCircle2,

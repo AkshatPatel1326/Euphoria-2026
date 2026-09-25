@@ -1,16 +1,16 @@
 import { Router } from "express";
 import type { HealthCheckResponse } from "../types";
-import authRoutes from "./authRoutes";
-import categoryRoutes from "./categoryRoutes";
-import eventRoutes from "./eventRoutes";
-import passRoutes from "./passRoutes";
-import sponsorRoutes from "./sponsorRoutes";
-import scheduleRoutes from "./scheduleRoutes";
-import registrationRoutes from "./registrationRoutes";
-import verificationRoutes from "./verificationRoutes";
-import adminRoutes from "./adminRoutes";
-import paymentRoutes from "./paymentRoutes";
-import announcementRoutes from "./announcementRoutes";
+import authRoutes from "../modules/auth/auth.routes";
+import categoryRoutes from "../modules/catalog/category.routes";
+import scheduleRoutes from "../modules/catalog/schedule.routes";
+import sponsorRoutes from "../modules/catalog/sponsor.routes";
+import eventRoutes from "../modules/events/event.routes";
+import passRoutes from "../modules/passes/pass.routes";
+import registrationRoutes from "../modules/registrations/registration.routes";
+import verificationRoutes from "../modules/verification/verification.routes";
+import adminRoutes from "../modules/admin/admin.routes";
+import paymentRoutes from "../modules/payments/payment.routes";
+import announcementRoutes from "../modules/announcements/announcement.routes";
 
 const router = Router();
 

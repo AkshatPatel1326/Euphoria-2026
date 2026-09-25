@@ -105,9 +105,17 @@ export interface CategoryWithCount extends Category {
   events?: Event[];
 }
 
+export interface CoordinatorItem {
+  name: string;
+  phone: string;
+}
+
 export interface EventDetail extends Event {
   category: Category;
   schedules?: Schedule[];
+  activeRegistrationsCount?: number;
+  facultyCoordinators?: CoordinatorItem[];
+  studentCoordinators?: CoordinatorItem[];
 }
 
 export interface ScheduleWithEvent extends Schedule {
@@ -196,6 +204,31 @@ export interface UpdateRegistrationStatusInput {
 
 export interface UpdateEventRegistrationStatusInput {
   registrationOpen: boolean;
+}
+
+export interface UpdateEventContentInput {
+  name?: string;
+  description?: string;
+  posterUrl?: string | null;
+  categoryId?: string;
+  fee?: number;
+  registrationType?: RegistrationType | string;
+  minTeamSize?: number;
+  maxTeamSize?: number;
+  registrationOpen?: boolean;
+  capacity?: number | null;
+  date?: string | null;
+  day?: string | null;
+  time?: string | null;
+  venue?: string | null;
+  prizes?: string | null;
+  rules?: string | null;
+  facultyCoordinator?: string | null;
+  studentCoordinator?: string | null;
+  facultyCoordinators?: CoordinatorItem[] | null;
+  studentCoordinators?: CoordinatorItem[] | null;
+  eventFamily?: string | null;
+  stage?: string | null;
 }
 
 export interface RegistrationDetail extends Registration {
