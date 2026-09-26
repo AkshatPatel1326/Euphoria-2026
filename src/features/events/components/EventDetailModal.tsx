@@ -75,6 +75,9 @@ const assetFallbacks: Record<string, string> = {
   "/assets/Table Tennis.png": "/assets/Table tennis.jpg",
   "/assets/Volleyball_2.jpg": "/assets/Volleyball.jpg",
   "/assets/Volleyball.png": "/assets/Volleyball.jpg",
+  "/assets/Basketball.jpg": "/assets/Basketball.jpeg",
+  "/assets/BBasketball.jpg": "/assets/Basketball.jpeg",
+  "/assets/Basketball.png": "/assets/Basketball.jpeg",
 
   /* ── Cultural fallbacks ── */
   "/assets/Move___Groove_Solo.jpg": "/assets/Move n groove Final.jpg",
@@ -1024,6 +1027,13 @@ export function EventDetailModal({
                         {activeEvent.fee === 0 ? "Free" : `₹${activeEvent.fee.toLocaleString("en-IN")}`}
                       </span>
                     </p>
+                    {(activeEvent.id === "cultural-12" ||
+                      activeEvent.name.toLowerCase().includes("standup comedy") ||
+                      activeEvent.name.toLowerCase().includes("pankaj")) && (
+                      <p className="text-[11px] sm:text-xs text-euphoria-gold bg-euphoria-gold/[0.1] border border-euphoria-gold/25 rounded-lg px-3 py-1.5 mt-2">
+                        ✨ Festival Pass holders can use their Festival Pass Registration ID to get the Standup Comedy ticket for ₹49.
+                      </p>
+                    )}
                     {isCapacityReached ? (
                       <p className="text-xs sm:text-[13px] text-amber-300/80">
                         This event has reached its maximum registration limit.

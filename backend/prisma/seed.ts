@@ -1087,6 +1087,27 @@ const rawEvents: RawEvent[] = [
     facultyCoordinator: "Mr. Mohit Jagtap - 9754844475, Ms. Paridhi Sharma - 6264474614",
     studentCoordinator: "Jayesh Danga - 9414144107, Viraj Patidar - 6260403906",
   },
+  {
+    id: "sport-3",
+    name: "Basketball — 3 v 3",
+    category: "sports",
+    description: "A 3 v 3 basketball competition for players ready to compete on the court.",
+    poster: "/assets/Basketball.jpeg",
+    fee: 1000,
+    registrationType: "individual",
+    minTeamSize: 1,
+    maxTeamSize: 1,
+    registrationOpen: true,
+    date: "28 October 2026",
+    day: "Wednesday",
+    time: "TBA",
+    venue: "TBA",
+    teamSize: "1",
+    prizes: "₹11,000",
+    rules: "",
+    facultyCoordinator: "Mr. Mohit Jagtap — 9754844475, Ms. Paridhi Sharma — 6264474614",
+    studentCoordinator: "Malay Patel — 9899312843, Raj Thakur — 9098899256",
+  },
 ];
 
 /* ═══════════════════════════════════════════════════════════════

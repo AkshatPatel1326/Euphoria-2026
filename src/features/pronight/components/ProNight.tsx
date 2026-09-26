@@ -29,6 +29,9 @@ import { EventDetailModal } from "@/features/events/components/EventDetailModal"
 
 export const PRO_NIGHT_ARTIST_IMAGE = "/assets/MS.jpeg";
 export const PRO_NIGHT_ARTIST_NAME = "MADHUR SHARMA";
+export const PRO_NIGHT_DATE = "October 30, 2026";
+export const PRO_NIGHT_TIME = "07:00 PM Onwards";
+export const PRO_NIGHT_VENUE = "Euphoria Main Stage";
 
 /**
  * RED BULL DJ / EVENT SLOT CONFIGURATION
@@ -41,6 +44,8 @@ export const RED_BULL_EVENT_CONFIG = {
   name: "Red Bull DJ Night",
   subtitle: "Official DJ Experience",
   venue: "Euphoria Arena Grounds",
+  date: "October 29, 2026",
+  time: "06:00 PM Onwards",
   description:
     "An electrifying night of high-octane electronic beats, festival anthems, and sensory soundscapes.",
   statusText: "LINEUP REVEAL SOON",
@@ -306,6 +311,22 @@ export function ProNight() {
                     sensation Madhur Sharma commands the Euphoria main stage with
                     soul-stirring anthems and electric energy.
                   </p>
+
+                  {/* Metadata Pills */}
+                  <div className="pt-1.5 grid grid-cols-2 gap-2 text-[11px] text-white/70">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Calendar className="size-3 text-euphoria-aqua/90 shrink-0" />
+                      <span className="truncate">{PRO_NIGHT_DATE}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Clock className="size-3 text-euphoria-aqua/90 shrink-0" />
+                      <span className="truncate">{PRO_NIGHT_TIME}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 col-span-2 min-w-0 text-white/60">
+                      <MapPin className="size-3 text-euphoria-aqua/90 shrink-0" />
+                      <span className="truncate">{PRO_NIGHT_VENUE}</span>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Pass Access Statement & CTA Button */}
@@ -423,6 +444,22 @@ export function ProNight() {
                 <p className="text-xs sm:text-sm text-white/60 leading-relaxed">
                   {RED_BULL_EVENT_CONFIG.description}
                 </p>
+
+                {/* Metadata Pills */}
+                <div className="pt-1.5 grid grid-cols-2 gap-2 text-[11px] text-white/70">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <Calendar className="size-3 text-rose-400/90 shrink-0" />
+                    <span className="truncate">{RED_BULL_EVENT_CONFIG.date}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <Clock className="size-3 text-rose-400/90 shrink-0" />
+                    <span className="truncate">{RED_BULL_EVENT_CONFIG.time}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 col-span-2 min-w-0 text-white/60">
+                    <MapPin className="size-3 text-rose-400/90 shrink-0" />
+                    <span className="truncate">{RED_BULL_EVENT_CONFIG.venue}</span>
+                  </div>
+                </div>
               </div>
 
               {/* Status & Replacement-Ready Footer */}
@@ -540,8 +577,17 @@ export function ProNight() {
                   </div>
                 </div>
 
+                {/* Festival Pass Benefit Callout */}
+                <div className="mt-3.5 px-3 py-2 rounded-xl bg-euphoria-gold/[0.08] border border-euphoria-gold/25 flex items-center gap-2">
+                  <Sparkles className="size-3.5 text-euphoria-gold shrink-0" />
+                  <p className="text-[11px] sm:text-xs text-white/85 leading-snug">
+                    Festival Pass holders can use their Festival Pass Registration ID to get the Standup Comedy ticket for{" "}
+                    <span className="font-bold text-euphoria-gold">₹49</span>.
+                  </p>
+                </div>
+
                 {/* CTA Button */}
-                <div className="mt-5 pt-4 border-t border-white/[0.08]">
+                <div className="mt-4 pt-3.5 border-t border-white/[0.08]">
                   <button
                     onClick={() => setSelectedModalEvent(standupEvent)}
                     className="w-full h-11 sm:h-12 inline-flex items-center justify-center gap-2 px-5 rounded-xl font-bold text-xs tracking-wider uppercase bg-white/[0.08] hover:bg-euphoria-gold hover:text-neutral-950 text-white border border-white/15 hover:border-euphoria-gold transition-all duration-300 active:scale-[0.98] cursor-pointer shadow-md"

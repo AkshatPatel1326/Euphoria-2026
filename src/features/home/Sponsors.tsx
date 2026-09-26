@@ -149,12 +149,12 @@ export function Sponsors() {
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full border border-white/[0.08] bg-white/[0.03] p-2.5 flex items-center justify-center transition-all duration-500 group-hover:border-euphoria-gold/30 group-hover:bg-white/[0.05] group-hover:shadow-[0_0_40px_rgba(175,153,71,0.12)]"
+                className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border border-[rgba(156,80,190,0.2)] bg-gradient-to-b from-[#C2B8CC] to-[#B8B0C2] p-3 flex items-center justify-center transition-all duration-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),0_4px_16px_rgba(0,0,0,0.25)] group-hover:from-[#CBC2D6] group-hover:to-[#C0B7CA] group-hover:border-[rgba(156,80,190,0.35)] group-hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.35),0_6px_20px_rgba(156,80,190,0.18)]"
               >
                 <img
                   src={sponsor.src}
                   alt={sponsor.label}
-                  className="w-full h-full object-contain transition-all duration-500 opacity-85 group-hover:opacity-100"
+                  className="w-full h-full object-contain transition-transform duration-300"
                 />
               </motion.div>
               <div className="text-center">
@@ -190,12 +190,12 @@ export function Sponsors() {
               <motion.div
                 whileHover={{ scale: 1.06, y: -2 }}
                 transition={{ duration: 0.25, ease: "easeOut" }}
-                className="group flex items-center justify-center aspect-square rounded-xl border border-white/[0.05] bg-white/[0.02] p-2.5 transition-all duration-400 hover:border-euphoria-gold/20 hover:bg-white/[0.04] hover:shadow-[0_0_20px_rgba(175,153,71,0.08)]"
+                className="group flex items-center justify-center aspect-square rounded-xl border border-[rgba(156,80,190,0.18)] bg-gradient-to-b from-[#C2B8CC] to-[#B8B0C2] p-2.5 sm:p-3 transition-all duration-300 hover:from-[#CBC2D6] hover:to-[#C0B7CA] hover:border-[rgba(156,80,190,0.35)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_4px_16px_rgba(156,80,190,0.16)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.18),0_2px_8px_rgba(0,0,0,0.2)]"
               >
                 <img
                   src={logo.src}
                   alt={logo.alt}
-                  className="w-full h-full object-contain opacity-70 group-hover:opacity-100 transition-opacity duration-300"
+                  className="w-full h-full object-contain transition-transform duration-300"
                   loading="lazy"
                 />
               </motion.div>

@@ -131,6 +131,11 @@ const FINAL_SPORTS_CONFIG: Record<
     poster: "/assets/Volleyball.jpg",
     order: 11,
   },
+  "sport-3": {
+    name: "Basketball — 3 v 3",
+    poster: "/assets/Basketball.jpeg",
+    order: 12,
+  },
 };
 
 /**
@@ -280,7 +285,7 @@ function mapBackendEvent(e: BackendEvent): EuphoriaEvent | null {
 
   if (isSports) {
     const sportsConfig = FINAL_SPORTS_CONFIG[e.id];
-    // Filter out non-final sports (e.g. Weight Lifting, Snooker, Basketball, extra Badminton variants)
+    // Filter out non-final sports (e.g. Weight Lifting, Snooker, extra Badminton variants)
     if (!sportsConfig) {
       return null;
     }

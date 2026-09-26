@@ -71,6 +71,9 @@ const assetFallbacks: Record<string, string> = {
   "/assets/Table Tennis.png": "/assets/Table tennis.jpg",
   "/assets/Volleyball_2.jpg": "/assets/Volleyball.jpg",
   "/assets/Volleyball.png": "/assets/Volleyball.jpg",
+  "/assets/Basketball.jpg": "/assets/Basketball.jpeg",
+  "/assets/BBasketball.jpg": "/assets/Basketball.jpeg",
+  "/assets/Basketball.png": "/assets/Basketball.jpeg",
 
   /* ── Cultural fallbacks ── */
   "/assets/Move___Groove_Solo.jpg": "/assets/Move n groove Final.jpg",
