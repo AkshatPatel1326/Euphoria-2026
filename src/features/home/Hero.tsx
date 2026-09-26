@@ -5,6 +5,7 @@ import { Particles } from "@/components/magicui/particles";
 import { Marquee, MarqueeItem } from "@/components/magicui/marquee";
 import { ShimmerButton } from "@/components/magicui/shimmer-button";
 import { AnimatedGradientText } from "@/components/magicui/animated-gradient-text";
+import { FEST_DATES, FEST_MONTH, FEST_YEAR, EUPHORIA_START_DATE } from "@/data/festival";
 
 /* ── Cinematic photo slideshow ───────────────────────────────── */
 interface SlideConfig {
@@ -348,10 +349,10 @@ function TaglineText({
       className={`text-center select-none ${className}`}
       aria-hidden={phase < 1 || phase > 3}
     >
-      <span className="block text-[clamp(1.35rem,5vw,4.25rem)] font-black tracking-[0.08em] sm:tracking-[0.1em] text-white/90 leading-[1.08]">
+      <span className="block text-[clamp(1.5rem,4.8vw,4.25rem)] font-black tracking-[0.08em] sm:tracking-[0.1em] text-white/90 leading-[1.06]">
         THE CELEBRATION
       </span>
-      <span className="block text-[clamp(1.75rem,6.5vw,5.5rem)] font-black tracking-[0.06em] sm:tracking-[0.08em] bg-clip-text text-transparent bg-gradient-to-r from-euphoria-gold via-euphoria-purple to-euphoria-aqua leading-[1.1] mt-2 sm:mt-2.5 md:mt-3">
+      <span className="block text-[clamp(1.95rem,6.2vw,5.4rem)] font-black tracking-[0.06em] sm:tracking-[0.08em] bg-clip-text text-transparent bg-gradient-to-r from-euphoria-gold via-euphoria-purple to-euphoria-aqua leading-[1.08] mt-1.5 sm:mt-2 md:mt-2.5">
         BEYOND BOUNDARIES
       </span>
     </div>
@@ -467,9 +468,6 @@ function ColourReveal({ phase }: { phase: number }) {
           }}
         />
       </div>
-
-      {/* "THE CELEBRATION / BEYOND BOUNDARIES" — desktop centered group */}
-      <TaglineText phase={phase} className="hidden lg:block px-4" />
     </div>
   );
 }
@@ -558,8 +556,7 @@ interface TimeRemaining {
   seconds: number;
 }
 
-/* ── Festival Countdown Target Date ─────────────────────────── */
-const EUPHORIA_START_DATE = "2026-10-28T10:00:00+05:30";
+/* ── Festival Countdown Target Date (imported from @/data/festival) ── */
 
 function calculateTimeRemaining(targetDateStr: string): TimeRemaining {
   const target = new Date(targetDateStr).getTime();
@@ -669,7 +666,7 @@ export function Hero() {
     <section
       id="home"
       ref={heroRef}
-      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden"
+      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20 sm:pt-24 lg:pt-24 pb-12 sm:pb-14 lg:pb-16 px-4 sm:px-6"
     >
       <HeroBackground />
       <MarqueeTypography />
@@ -691,16 +688,16 @@ export function Hero() {
       {/* ── ACT 1+2: Intro tagline reveal ── */}
       <ColourReveal phase={introPhase} />
 
-      {/* ── ACT 3: SAGE EUPHORIA hero — same center position, no vertical movement ── */}
-      <div className="relative z-10 flex flex-col items-center text-center px-4 sm:px-8 max-w-[1536px] mx-auto w-full pt-16 sm:pt-20 lg:pt-0 pb-28 sm:pb-32 lg:pb-0">
-        {/* Headline Container with stable minimum height on mobile so Tagline and SAGE Euphoria share the exact same visual zone without shifting CTAs */}
-        <div className="relative mb-4 sm:mb-6 w-full flex items-center justify-center min-h-[105px] sm:min-h-[125px] lg:min-h-0">
-          {/* Mobile-only tagline overlay: strictly aligned in headline zone, guaranteed safe separation from CTA buttons */}
-          <div className="lg:hidden absolute inset-0 flex items-center justify-center pointer-events-none">
-            <TaglineText phase={introPhase} className="px-2" />
+      {/* ── ACT 3: SAGE EUPHORIA hero — unified center position in natural flow ── */}
+      <div className="relative z-10 flex flex-col items-center text-center max-w-[1536px] mx-auto w-full my-auto pt-6 sm:pt-8 md:pt-10 lg:pt-12">
+        {/* Reserved Branding Zone: Both "THE CELEBRATION / BEYOND BOUNDARIES" and "SAGE EUPHORIA" occupy the exact same reserved visual region across all screen sizes */}
+        <div className="relative mb-3 sm:mb-4 md:mb-5 lg:mb-5 w-full flex items-start justify-center min-h-[135px] sm:min-h-[168px] md:min-h-[200px] lg:min-h-[230px]">
+          {/* State A: Tagline overlay ("THE CELEBRATION / BEYOND BOUNDARIES") anchored to top */}
+          <div className="absolute inset-x-0 top-0 flex items-center justify-center pointer-events-none">
+            <TaglineText phase={introPhase} className="px-2 sm:px-4" />
           </div>
 
-          {/* Large written SAGE EUPHORIA typography — enters from center, scale+opacity only */}
+          {/* State B: Large written SAGE EUPHORIA typography — enters from center, scale+opacity only */}
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={
@@ -713,29 +710,47 @@ export function Hero() {
               delay: heroReady ? 0 : 0,
               ease: [0.25, 0.1, 0.25, 1],
             }}
-            className="w-full"
+            className="w-full pointer-events-none"
             style={{ filter: heroReady ? "blur(0px)" : "blur(10px)", transition: "filter 0.6s cubic-bezier(0.25, 0.1, 0.25, 1)" }}
           >
-            <h1 className="tracking-tight">
-              <span className="block text-[clamp(2.5rem,7.5vw,7.5rem)] font-black text-white/90 leading-[0.88]">
+            <h1 className="tracking-tight select-none">
+              <span className="block text-[clamp(2.65rem,6.8vw,6.25rem)] font-black text-white/90 leading-[0.88]">
                 SAGE
               </span>
-              <span className="block text-[clamp(3.25rem,9.5vw,9.5rem)] font-black text-transparent bg-clip-text bg-gradient-to-r from-euphoria-gold via-euphoria-purple to-euphoria-aqua leading-[1.12]">
+              <span className="block text-[clamp(3.35rem,8.6vw,7.85rem)] font-black text-transparent bg-clip-text bg-gradient-to-r from-euphoria-gold via-euphoria-purple to-euphoria-aqua leading-[1.08]">
                 Euphoria
               </span>
             </h1>
           </motion.div>
         </div>
 
-        {/* Year badge */}
+        {/* ── Fest Dates Block (Directly below Hero animation & above CTAs) ── */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={heroReady ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 0.4, delay: heroReady ? 0 : 0 }}
-          className="mb-6 sm:mb-8"
+          initial={{ opacity: 0, y: 6 }}
+          animate={heroSettled ? { opacity: 1, y: 0 } : { opacity: 0, y: 6 }}
+          transition={{ duration: 0.5, delay: heroSettled ? 0.1 : 0 }}
+          className="flex flex-col items-center select-none w-full mb-5 sm:mb-6 md:mb-7"
         >
-          <span className="inline-block px-4 py-1.5 text-[10px] sm:text-xs font-semibold tracking-[0.4em] uppercase text-euphoria-gold/80 border border-euphoria-gold/30 rounded-full bg-euphoria-gold/[0.06] backdrop-blur-sm">
-            2026 Edition
+          {/* Three distinct date items: editorial, balanced visual weight */}
+          <div className="flex items-center justify-center gap-3 sm:gap-4 md:gap-5">
+            {FEST_DATES.map((date, idx) => (
+              <span key={date} className="contents">
+                <span className="inline-flex items-center justify-center min-w-[36px] sm:min-w-[44px] md:min-w-[52px] text-2xl sm:text-3xl md:text-[32px] font-extrabold tracking-tight text-white tabular-nums drop-shadow-[0_2px_14px_rgba(255,255,255,0.2)]">
+                  {date}
+                </span>
+                {idx < FEST_DATES.length - 1 && (
+                  <span
+                    className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-euphoria-gold/80 shadow-[0_0_8px_rgba(175,153,71,0.5)] shrink-0"
+                    aria-hidden="true"
+                  />
+                )}
+              </span>
+            ))}
+          </div>
+
+          {/* Month & Year context: smaller than date numbers */}
+          <span className="text-[11px] sm:text-xs md:text-sm font-bold tracking-[0.35em] sm:tracking-[0.4em] uppercase text-euphoria-gold mt-1 sm:mt-1.5 drop-shadow-[0_1px_8px_rgba(175,153,71,0.25)]">
+            {FEST_MONTH} {FEST_YEAR}
           </span>
         </motion.div>
 
@@ -766,93 +781,93 @@ export function Hero() {
             Discover Euphoria
           </motion.button>
         </motion.div>
-      </div>
 
-      {/* ── Lower Hero Countdown (replaces old scroll indicator) ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={heroSettled ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
-        transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
-        className="absolute bottom-4 sm:bottom-8 lg:bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center pointer-events-none select-none w-full max-w-md px-4"
-        aria-label="Euphoria 2026 Countdown"
-      >
-        {/* Atmospheric ambient glow */}
+        {/* ── Countdown Block: smaller gap below CTA buttons ── */}
         <motion.div
-          animate={reducedMotion ? {} : { opacity: [0.4, 0.7, 0.4], scale: [0.98, 1.02, 0.98] }}
-          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -inset-x-12 -inset-y-8 pointer-events-none -z-10"
-          style={{
-            background:
-              "radial-gradient(ellipse 70% 55% at 50% 50%, rgba(62, 238, 213, 0.09) 0%, rgba(162, 50, 160, 0.06) 45%, transparent 72%)",
-          }}
-          aria-hidden="true"
-        />
-
-        {/* Editorial micro label */}
-        <span className="text-[9px] sm:text-[10px] md:text-[11px] font-semibold tracking-[0.38em] uppercase text-euphoria-gold/90 mb-2 sm:mb-2.5 drop-shadow-[0_1px_8px_rgba(175,153,71,0.25)]">
-          EUPHORIA 2026
-        </span>
-
-        {/* Cinematic counters with subtle rhythm separators */}
-        <div className="flex items-center justify-center gap-2.5 sm:gap-5 md:gap-7">
-          <div className="flex flex-col items-center min-w-[50px] sm:min-w-[66px] md:min-w-[80px]">
-            <span className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-black tracking-tight text-white tabular-nums leading-none drop-shadow-[0_2px_14px_rgba(255,255,255,0.12)]">
-              {String(timeLeft.days).padStart(2, "0")}
-            </span>
-            <span className="text-[8px] sm:text-[9px] md:text-[10px] font-semibold tracking-[0.28em] uppercase text-white/70 sm:text-white/50 mt-1.5 sm:mt-2">
-              Days
-            </span>
-          </div>
-
+          initial={{ opacity: 0, y: 8 }}
+          animate={heroSettled ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
+          transition={{ duration: 0.5, delay: heroSettled ? 0.3 : 0 }}
+          className="mt-4 sm:mt-5 md:mt-6 relative flex flex-col items-center pointer-events-none select-none w-full max-w-lg mx-auto"
+          aria-label="Euphoria 2026 Countdown"
+        >
+          {/* Atmospheric ambient glow */}
           <motion.div
-            animate={reducedMotion ? {} : { opacity: [0.3, 0.6, 0.3] }}
-            transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-            className="w-px h-6 sm:h-8 md:h-9 bg-gradient-to-b from-transparent via-white/30 to-transparent self-center -mt-3.5 sm:-mt-4"
+            animate={reducedMotion ? {} : { opacity: [0.35, 0.65, 0.35], scale: [0.98, 1.02, 0.98] }}
+            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute -inset-x-12 -inset-y-8 pointer-events-none -z-10"
+            style={{
+              background:
+                "radial-gradient(ellipse 70% 55% at 50% 50%, rgba(62, 238, 213, 0.08) 0%, rgba(162, 50, 160, 0.05) 45%, transparent 72%)",
+            }}
             aria-hidden="true"
           />
 
-          <div className="flex flex-col items-center min-w-[50px] sm:min-w-[66px] md:min-w-[80px]">
-            <span className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-black tracking-tight text-white tabular-nums leading-none drop-shadow-[0_2px_14px_rgba(255,255,255,0.12)]">
-              {String(timeLeft.hours).padStart(2, "0")}
-            </span>
-            <span className="text-[8px] sm:text-[9px] md:text-[10px] font-semibold tracking-[0.28em] uppercase text-white/70 sm:text-white/50 mt-1.5 sm:mt-2">
-              Hours
-            </span>
+          {/* Countdown micro label: small gap */}
+          <span className="text-[8px] sm:text-[9px] md:text-[10px] font-semibold tracking-[0.32em] uppercase text-white/50 mb-1.5 sm:mb-2">
+            COUNTDOWN TO DAY 1
+          </span>
+
+          {/* Cinematic counters with subtle rhythm separators */}
+          <div className="flex items-center justify-center gap-2 sm:gap-4 md:gap-5">
+            <div className="flex flex-col items-center min-w-[50px] sm:min-w-[62px] md:min-w-[72px]">
+              <span className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-black tracking-tight text-white tabular-nums leading-none drop-shadow-[0_2px_16px_rgba(255,255,255,0.15)]">
+                {String(timeLeft.days).padStart(2, "0")}
+              </span>
+              <span className="text-[8px] sm:text-[9px] md:text-[10px] font-semibold tracking-[0.28em] uppercase text-white/70 sm:text-white/50 mt-1.5 sm:mt-2">
+                Days
+              </span>
+            </div>
+
+            <motion.div
+              animate={reducedMotion ? {} : { opacity: [0.3, 0.6, 0.3] }}
+              transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+              className="w-px h-6 sm:h-7 md:h-8 bg-gradient-to-b from-transparent via-white/30 to-transparent self-center -mt-3.5 sm:-mt-4"
+              aria-hidden="true"
+            />
+
+            <div className="flex flex-col items-center min-w-[50px] sm:min-w-[62px] md:min-w-[72px]">
+              <span className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-black tracking-tight text-white tabular-nums leading-none drop-shadow-[0_2px_16px_rgba(255,255,255,0.15)]">
+                {String(timeLeft.hours).padStart(2, "0")}
+              </span>
+              <span className="text-[8px] sm:text-[9px] md:text-[10px] font-semibold tracking-[0.28em] uppercase text-white/70 sm:text-white/50 mt-1.5 sm:mt-2">
+                Hours
+              </span>
+            </div>
+
+            <motion.div
+              animate={reducedMotion ? {} : { opacity: [0.3, 0.6, 0.3] }}
+              transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+              className="w-px h-6 sm:h-7 md:h-8 bg-gradient-to-b from-transparent via-white/30 to-transparent self-center -mt-3.5 sm:-mt-4"
+              aria-hidden="true"
+            />
+
+            <div className="flex flex-col items-center min-w-[50px] sm:min-w-[62px] md:min-w-[72px]">
+              <span className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-black tracking-tight text-white tabular-nums leading-none drop-shadow-[0_2px_16px_rgba(255,255,255,0.15)]">
+                {String(timeLeft.minutes).padStart(2, "0")}
+              </span>
+              <span className="text-[8px] sm:text-[9px] md:text-[10px] font-semibold tracking-[0.28em] uppercase text-white/70 sm:text-white/50 mt-1.5 sm:mt-2">
+                Minutes
+              </span>
+            </div>
+
+            <motion.div
+              animate={reducedMotion ? {} : { opacity: [0.3, 0.6, 0.3] }}
+              transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+              className="w-px h-6 sm:h-7 md:h-8 bg-gradient-to-b from-transparent via-white/30 to-transparent self-center -mt-3.5 sm:-mt-4"
+              aria-hidden="true"
+            />
+
+            <div className="flex flex-col items-center min-w-[50px] sm:min-w-[62px] md:min-w-[72px]">
+              <span className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-black tracking-tight text-white tabular-nums leading-none drop-shadow-[0_2px_16px_rgba(255,255,255,0.15)]">
+                {String(timeLeft.seconds).padStart(2, "0")}
+              </span>
+              <span className="text-[8px] sm:text-[9px] md:text-[10px] font-semibold tracking-[0.28em] uppercase text-white/70 sm:text-white/50 mt-1.5 sm:mt-2">
+                Seconds
+              </span>
+            </div>
           </div>
-
-          <motion.div
-            animate={reducedMotion ? {} : { opacity: [0.3, 0.6, 0.3] }}
-            transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-            className="w-px h-6 sm:h-8 md:h-9 bg-gradient-to-b from-transparent via-white/30 to-transparent self-center -mt-3.5 sm:-mt-4"
-            aria-hidden="true"
-          />
-
-          <div className="flex flex-col items-center min-w-[50px] sm:min-w-[66px] md:min-w-[80px]">
-            <span className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-black tracking-tight text-white tabular-nums leading-none drop-shadow-[0_2px_14px_rgba(255,255,255,0.12)]">
-              {String(timeLeft.minutes).padStart(2, "0")}
-            </span>
-            <span className="text-[8px] sm:text-[9px] md:text-[10px] font-semibold tracking-[0.28em] uppercase text-white/70 sm:text-white/50 mt-1.5 sm:mt-2">
-              Minutes
-            </span>
-          </div>
-
-          <motion.div
-            animate={reducedMotion ? {} : { opacity: [0.3, 0.6, 0.3] }}
-            transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-            className="w-px h-6 sm:h-8 md:h-9 bg-gradient-to-b from-transparent via-white/30 to-transparent self-center -mt-3.5 sm:-mt-4"
-            aria-hidden="true"
-          />
-
-          <div className="flex flex-col items-center min-w-[50px] sm:min-w-[66px] md:min-w-[80px]">
-            <span className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-black tracking-tight text-white tabular-nums leading-none drop-shadow-[0_2px_14px_rgba(255,255,255,0.12)]">
-              {String(timeLeft.seconds).padStart(2, "0")}
-            </span>
-            <span className="text-[8px] sm:text-[9px] md:text-[10px] font-semibold tracking-[0.28em] uppercase text-white/70 sm:text-white/50 mt-1.5 sm:mt-2">
-              Seconds
-            </span>
-          </div>
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
     </section>
   );
 }

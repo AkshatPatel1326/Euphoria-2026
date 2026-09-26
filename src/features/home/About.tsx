@@ -1,4 +1,6 @@
+import { Calendar } from "lucide-react";
 import { BlurFade } from "@/components/magicui/blur-fade";
+import { FEST_DATES, FEST_MONTH, FEST_YEAR } from "@/data/festival";
 
 export function About() {
   return (
@@ -40,6 +42,15 @@ export function About() {
                   Edition
                 </span>
               </h2>
+
+              {/* Supporting Fest Dates Reference */}
+              <div className="mt-3 sm:mt-4 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] backdrop-blur-sm">
+                <Calendar className="size-3.5 text-euphoria-gold/90 shrink-0" />
+                <span className="text-xs sm:text-[13px] font-bold tracking-[0.2em] uppercase text-white/90">
+                  <span className="text-white font-extrabold">{FEST_DATES.join(" · ")}</span>{" "}
+                  <span className="text-euphoria-gold">{FEST_MONTH} {FEST_YEAR}</span>
+                </span>
+              </div>
             </BlurFade>
 
             <BlurFade delay={0.1} inViewMargin="-20px" className="mt-6 sm:mt-8 space-y-4 sm:space-y-5 max-w-xl lg:max-w-[620px]">
